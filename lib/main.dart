@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import 'registration_page.dart';
+import 'login_page.dart';
+import 'splash_screen.dart';
 
 void main() {
   runApp(const MainApp());
@@ -10,9 +12,13 @@ class MainApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return const MaterialApp(
+    return MaterialApp(
       debugShowCheckedModeBanner: false,
-      home: RegistrationPage(),
+      title: 'My LU',
+      theme: ThemeData(
+        primarySwatch: Colors.blue,
+      ),
+      home: SplashScreen(),
     );
   }
 }
