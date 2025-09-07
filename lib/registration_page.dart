@@ -5,180 +5,235 @@ import 'package:my_lu/home_page.dart';
 import 'login_page.dart';
 import 'verify_email_page.dart';
 
-class RegistrationPage extends StatefulWidget {
+const kDefaultPadding = EdgeInsets.symmetric(horizontal: 20.0, vertical: 10.0);
+const kTextFieldColor = Colors.grey;
+const kPrimaryColor = Colors.blue;
+
+const TextStyle subtitle = TextStyle(
+  fontSize: 16,
+  color: Colors.grey,
+);
+
+const TextStyle titleText = TextStyle(
+  fontSize: 28,
+  fontWeight: FontWeight.bold,
+  color: Colors.black,
+);
+
+class RegistrationPage extends StatelessWidget {
   const RegistrationPage({super.key});
-
-  @override
-  State<RegistrationPage> createState() => _RegistrationPageState();
-}
-
-class _RegistrationPageState extends State<RegistrationPage> {
-  final _formKey = GlobalKey<FormState>();
-
-  final TextEditingController _emailController = TextEditingController();
-  final TextEditingController _passwordController = TextEditingController();
-  final TextEditingController _confirmPasswordController =
-      TextEditingController();
-
-  bool _obscurePassword = true;
-  bool _obscureConfirmPassword = true;
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.lightBlue.shade50,
-      body: Center(
-        child: SingleChildScrollView(
-          padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 24),
-          child: Column(
-            children: [
-              const Icon(
-                Icons.app_registration,
-                size: 100,
-                color: Colors.blueAccent,
-              ),
-              const SizedBox(height: 20),
-              const Text(
+      body: SingleChildScrollView(
+        child: Column(
+          children: [
+            const SizedBox(height: 70),
+            const Padding(
+              padding: kDefaultPadding,
+              child: Text(
                 'Create Account',
-                style: TextStyle(fontSize: 28, fontWeight: FontWeight.bold),
+                style: titleText,
               ),
-              const SizedBox(height: 10),
-              Form(
-                key: _formKey,
-                child: Column(
-                  children: [
-                    // Email
-                    TextFormField(
-                      controller: _emailController,
-                      decoration: InputDecoration(
-                        labelText: 'Email',
-                        prefixIcon: const Icon(Icons.email),
-                        border: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(12),
-                        ),
-                      ),
-                      validator: (value) {
-                        if (value == null ||
-                            value.isEmpty ||
-                            !value.contains('@')) {
-                          return 'Enter a valid email';
-                        }
-                        return null;
-                      },
-                    ),
-                    const SizedBox(height: 15),
-
-                    // Password
-                    TextFormField(
-                      controller: _passwordController,
-                      obscureText: _obscurePassword,
-                      decoration: InputDecoration(
-                        labelText: 'Password',
-                        prefixIcon: const Icon(Icons.lock),
-                        suffixIcon: IconButton(
-                          icon: Icon(
-                            _obscurePassword
-                                ? Icons.visibility_off
-                                : Icons.visibility,
-                          ),
-                          onPressed: () {
-                            setState(() {
-                              _obscurePassword = !_obscurePassword;
-                            });
-                          },
-                        ),
-                        border: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(12),
-                        ),
-                      ),
-                      validator: (value) {
-                        if (value == null || value.length < 6) {
-                          return 'Password must be at least 6 characters';
-                        }
-                        return null;
-                      },
-                    ),
-                    const SizedBox(height: 15),
-
-                    // Confirm Password
-                    TextFormField(
-                      controller: _confirmPasswordController,
-                      obscureText: _obscureConfirmPassword,
-                      decoration: InputDecoration(
-                        labelText: 'Confirm Password',
-                        prefixIcon: const Icon(Icons.lock),
-                        suffixIcon: IconButton(
-                          icon: Icon(
-                            _obscureConfirmPassword
-                                ? Icons.visibility_off
-                                : Icons.visibility,
-                          ),
-                          onPressed: () {
-                            setState(() {
-                              _obscureConfirmPassword =
-                                  !_obscureConfirmPassword;
-                            });
-                          },
-                        ),
-                        border: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(12),
-                        ),
-                      ),
-                      validator: (value) {
-                        if (value != _passwordController.text) {
-                          return 'Passwords do not match';
-                        }
-                        return null;
-                      },
-                    ),
-                    const SizedBox(height: 20),
-
-                    ElevatedButton(
-                      onPressed: () {
-                        if (_formKey.currentState!.validate()) {
-                          // Here you can add user registration logic, e.g. Firebase Auth
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            const SnackBar(
-                              content: Text('Account created successfully!'),
-                            ),
-                          );
-                          Navigator.pushReplacement(
-                            context,
-                            MaterialPageRoute(
-                              builder: (_) =>const LoginPage(),
-                            ),
-                          );
-                        }
-                      },
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: Colors.blueAccent,
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 60,
-                          vertical: 14,
-                        ),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(10),
-                        ),
-                      ),
-                      child: const Text(
-                        "Register",
-                        style: TextStyle(fontSize: 18),
+            ),
+            const SizedBox(height: 5),
+            Padding(
+              padding: kDefaultPadding,
+              child: Row(
+                children: [
+                  const Text('Already a member?', style: subtitle),
+                  const SizedBox(width: 5),
+                  GestureDetector(
+                    onTap: () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(builder: (context) => LoginPage()),
+                      );
+                    },
+                    child: const Text(
+                      'Login',
+                      style: TextStyle(
+                        decoration: TextDecoration.underline,
+                        decorationThickness: 1,
+                        color: kPrimaryColor,
                       ),
                     ),
-                    const SizedBox(height: 12),
-                    TextButton(
-                      onPressed: () {
-                        Navigator.pop(context);
-                      },
-                      child: const Text("Already have an account? Login"),
-                    ),
-                  ],
-                ),
+                  ),
+                ],
               ),
-            ],
-          ),
+            ),
+            const SizedBox(height: 10),
+            RegistrationForm(),
+          ],
         ),
       ),
+    );
+  }
+}
+
+class RegistrationForm extends StatefulWidget {
+  @override
+  State<RegistrationForm> createState() => _RegistrationFormState();
+}
+
+class _RegistrationFormState extends State<RegistrationForm> {
+  final _formKey = GlobalKey<FormState>();
+
+  final TextEditingController _firstNameController = TextEditingController();
+  final TextEditingController _lastNameController = TextEditingController();
+  final TextEditingController _emailController = TextEditingController();
+  final TextEditingController _phoneController = TextEditingController();
+  final TextEditingController _passwordController = TextEditingController();
+  final TextEditingController _confirmPasswordController = TextEditingController();
+
+  bool _isObscurePassword = true;
+  bool _isObscureConfirm = true;
+
+  bool _loading = false;
+
+  Future<void> _register() async {
+    if (!_formKey.currentState!.validate()) return;
+
+    setState(() => _loading = true);
+
+    try {
+      // Firebase Authentication
+      UserCredential userCredential = await FirebaseAuth.instance
+          .createUserWithEmailAndPassword(
+              email: _emailController.text.trim(),
+              password: _passwordController.text.trim());
+
+      // Firestore user details
+      await FirebaseFirestore.instance
+          .collection('users')
+          .doc(userCredential.user!.uid)
+          .set({
+        'firstName': _firstNameController.text.trim(),
+        'lastName': _lastNameController.text.trim(),
+        'phone': _phoneController.text.trim(),
+        'email': _emailController.text.trim(),
+        'createdAt': FieldValue.serverTimestamp(),
+      });
+
+      // Optional: Email verification
+      await userCredential.user?.sendEmailVerification();
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Registration Successful! Please verify your email.')),
+      );
+
+      // Clear fields or navigate
+      _formKey.currentState!.reset();
+
+    } on FirebaseAuthException catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(e.message ?? 'Registration failed')),
+      );
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Something went wrong: $e')),
+      );
+    } finally {
+      setState(() => _loading = false);
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: kDefaultPadding,
+      child: Form(
+        key: _formKey,
+        child: Column(
+          children: [
+            buildInputForm('First Name', _firstNameController, false),
+            buildInputForm('Last Name', _lastNameController, false),
+            buildInputForm('Email', _emailController, false),
+            buildInputForm('Phone', _phoneController, false),
+            buildInputForm('Password', _passwordController, true, true),
+            buildInputForm('Confirm Password', _confirmPasswordController, true, false),
+            const SizedBox(height: 20),
+            ElevatedButton(
+              style: ElevatedButton.styleFrom(
+                backgroundColor: kPrimaryColor,
+                minimumSize: const Size(double.infinity, 50),
+              ),
+              onPressed: _loading ? null : _register,
+              child: _loading
+                  ? const CircularProgressIndicator(color: Colors.white)
+                  : const Text('Register'),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Padding buildInputForm(
+      String hint, TextEditingController controller, bool isPassword,
+      [bool isPasswordField = true]) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 5),
+      child: TextFormField(
+        controller: controller,
+        obscureText: isPassword
+            ? (isPasswordField ? _isObscurePassword : _isObscureConfirm)
+            : false,
+        validator: (value) {
+          if (value == null || value.isEmpty) {
+            return 'Please enter $hint';
+          }
+          if (hint == 'Email' && !RegExp(r'^[^@]+@[^@]+\.[^@]+').hasMatch(value)) {
+            return 'Enter a valid email';
+          }
+          if (hint == 'Password') {
+            if (value.length < 6 ||
+                !RegExp(r'^(?=.*[A-Za-z])(?=.*\d)[A-Za-z\d]{6,}$').hasMatch(value)) {
+              return 'Password must be at least 6 characters and contain at least one letter and one number';
+            }
+          }
+          if (hint == 'Confirm Password' && value != _passwordController.text) {
+            return 'Passwords do not match';
+          }
+          return null;
+        },
+        decoration: InputDecoration(
+          hintText: hint,
+          hintStyle: const TextStyle(color: kTextFieldColor),
+          focusedBorder: const UnderlineInputBorder(
+              borderSide: BorderSide(color: kPrimaryColor)),
+          suffixIcon: isPassword
+              ? IconButton(
+                  onPressed: () {
+                    setState(() {
+                      if (isPasswordField) {
+                        _isObscurePassword = !_isObscurePassword;
+                      } else {
+                        _isObscureConfirm = !_isObscureConfirm;
+                      }
+                    });
+                  },
+                  icon: Icon(
+                    (isPasswordField ? _isObscurePassword : _isObscureConfirm)
+                        ? Icons.visibility_off
+                        : Icons.visibility,
+                    color: kTextFieldColor,
+                  ),
+                )
+              : null,
+        ),
+      ),
+    );
+  }
+}
+
+// Simple placeholder for Login Page
+class LoginPage extends StatelessWidget {
+  @override
+  Widget build(BuildContext context) {
+    return const Scaffold(
+      body: Center(child: Text('Login Page')),
     );
   }
 }

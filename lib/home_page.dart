@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'login_page.dart';
-import 'registration_page.dart';
+import 'registration_page.dart' hide LoginPage;
 import 'home_page.dart';
 
 void main() {
@@ -45,12 +45,12 @@ class HomePage extends StatelessWidget {
         children: [
           const SizedBox(height: 20),
 
-          // 🔹 Logo
+        
           Center(
             child: Column(
               children: [
                 Image.asset(
-                  "assets/logo.jpeg", // <-- logo ekhane add korte hobe
+                  "assets/logo.jpeg",
                   height: 120,
                 ),
                 const SizedBox(height: 10),
@@ -60,7 +60,7 @@ class HomePage extends StatelessWidget {
 
           const SizedBox(height: 20),
 
-          // 🔹 Grid Menu
+    
           Expanded(
             child: GridView.count(
               crossAxisCount: 2,
@@ -134,7 +134,6 @@ class HomePage extends StatelessWidget {
     );
   }
 
-  // 🔹 Custom card widget
   static Widget _buildMenuCard({
     required IconData icon,
     required String title,
@@ -164,9 +163,7 @@ class HomePage extends StatelessWidget {
   }
 }
 
-//
-// 🔹 Dummy Pages
-//
+
 class ChatPage extends StatelessWidget {
   const ChatPage({super.key});
   @override
@@ -216,7 +213,7 @@ class SettingsPage extends StatelessWidget {
 }
 
 
-//
+
 Widget _buildDummyPage(BuildContext context, String title) {
   return Scaffold(
     appBar: AppBar(
