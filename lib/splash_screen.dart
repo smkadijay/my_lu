@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'dart:async';
-import 'registration_page.dart'; 
+import 'home_page.dart'; // ✅ Only need HomePage now
 
 class SplashScreen extends StatefulWidget {
   const SplashScreen({super.key});
@@ -13,16 +13,15 @@ class _SplashScreenState extends State<SplashScreen> {
   @override
   void initState() {
     super.initState();
+    Timer(const Duration(seconds: 3), _goHome);
+  }
 
-    // ৩ সেকেন্ড পরে Registration Page এ যাবে
-    Timer(const Duration(seconds: 4), () {
-      if (mounted) {
-        Navigator.pushReplacement(
-          context,
-          MaterialPageRoute(builder: (context) => const RegistrationPage()),
-        );
-      }
-    });
+  void _goHome() {
+    if (!mounted) return; // Prevent navigation if widget disposed
+    Navigator.pushReplacement(
+      context,
+      MaterialPageRoute(builder: (_) => const HomePage()),
+    );
   }
 
   @override
@@ -33,28 +32,20 @@ class _SplashScreenState extends State<SplashScreen> {
         children: [
           // Background image
           Image.asset(
-            "assets/lu.jpeg", // এখানে তোমার varsity photo দিন
+            "assets/lu.jpeg",
             fit: BoxFit.cover,
           ),
 
           // Transparent overlay
-          Container(
-            color: Colors.black.withOpacity(0.5), // Dark overlay for clarity
-          ),
+          Container(color: Colors.black.withOpacity(0.5)),
 
           // Center content
           Center(
             child: Column(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                // Logo optional (remove if not needed)
-                Image.asset(
-                  "assets/logo.jpeg",
-                  height: 120,
-                ),
+                Image.asset("assets/logo.jpeg", height: 120),
                 const SizedBox(height: 20),
-
-                // Welcome Text
                 Text(
                   "Welcome to My LU",
                   textAlign: TextAlign.center,
@@ -71,24 +62,13 @@ class _SplashScreenState extends State<SplashScreen> {
                     ],
                   ),
                 ),
-
                 const SizedBox(height: 10),
-
-                // Small subtitle
                 const Text(
                   "Connecting LU students in one place",
-                  style: TextStyle(
-                    fontSize: 16,
-                    color: Colors.white70,
-                  ),
+                  style: TextStyle(fontSize: 16, color: Colors.white70),
                 ),
-
                 const SizedBox(height: 40),
-
-                // Loading indicator
-                const CircularProgressIndicator(
-                  color: Colors.white,
-                ),
+                const CircularProgressIndicator(color: Colors.white),
               ],
             ),
           ),
