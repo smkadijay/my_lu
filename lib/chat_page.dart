@@ -28,19 +28,27 @@ class ChatPage extends StatelessWidget {
                   .orderBy("time", descending: true)
                   .snapshots(),
               builder: (context, snapshot) {
-                if (!snapshot.hasData) return Center(child: CircularProgressIndicator());
+                if (!snapshot.hasData)
+                  return Center(child: CircularProgressIndicator());
                 final docs = snapshot.data!.docs;
                 return ListView.builder(
                   reverse: true,
                   itemCount: docs.length,
                   itemBuilder: (context, index) {
                     final data = docs[index].data() as Map<String, dynamic>;
-                    final isMe = data["user"] == FirebaseAuth.instance.currentUser!.email;
+                    final isMe =
+                        data["user"] ==
+                        FirebaseAuth.instance.currentUser!.email;
 
                     return Align(
-                      alignment: isMe ? Alignment.centerRight : Alignment.centerLeft,
+                      alignment: isMe
+                          ? Alignment.centerRight
+                          : Alignment.centerLeft,
                       child: Container(
-                        margin: EdgeInsets.symmetric(vertical: 5, horizontal: 10),
+                        margin: EdgeInsets.symmetric(
+                          vertical: 5,
+                          horizontal: 10,
+                        ),
                         padding: EdgeInsets.all(10),
                         decoration: BoxDecoration(
                           color: isMe ? Colors.blue[200] : Colors.grey[300],
@@ -53,7 +61,10 @@ class ChatPage extends StatelessWidget {
                             SizedBox(height: 3),
                             Text(
                               data["user"],
-                              style: TextStyle(fontSize: 10, color: Colors.black54),
+                              style: TextStyle(
+                                fontSize: 10,
+                                color: Colors.black54,
+                              ),
                             ),
                           ],
                         ),

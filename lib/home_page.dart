@@ -1,169 +1,6 @@
 import 'package:flutter/material.dart';
-import 'package:firebase_auth/firebase_auth.dart';
-import 'login_page.dart';
-import 'registration_page.dart' hide LoginPage;
-import 'home_page.dart';
 
-void main() {
-  runApp(const MyLUApp());
-}
-
-class MyLUApp extends StatelessWidget {
-  const MyLUApp({super.key});
-
-  Future<void> _logout(BuildContext context) async {
-    await FirebaseAuth.instance.signOut();
-    Navigator.pushReplacement(
-      context,
-      MaterialPageRoute(builder: (_) => LoginPage()),
-    );
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return MaterialApp(
-      title: "MyLU",
-      debugShowCheckedModeBanner: false,
-      theme: ThemeData(primarySwatch: Colors.deepPurple),
-      home: const HomePage(),
-    );
-  }
-}
-
-class HomePage extends StatelessWidget {
-  const HomePage({super.key});
-
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        backgroundColor: Colors.deepPurple,
-        title: const Text("MyLU"),
-        centerTitle: true,
-      ),
-      body: Column(
-        children: [
-          const SizedBox(height: 20),
-
-        
-          Center(
-            child: Column(
-              children: [
-                Image.asset(
-                  "assets/logo.jpeg",
-                  height: 120,
-                ),
-                const SizedBox(height: 10),
-              ],
-            ),
-          ),
-
-          const SizedBox(height: 20),
-
-    
-          Expanded(
-            child: GridView.count(
-              crossAxisCount: 2,
-              padding: const EdgeInsets.all(12),
-              crossAxisSpacing: 12,
-              mainAxisSpacing: 12,
-              children: [
-                _buildMenuCard(
-                  icon: Icons.chat,
-                  title: "Chat App",
-                  color: Colors.blue,
-                  onTap: () {
-                    Navigator.push(context,
-                        MaterialPageRoute(builder: (_) => const ChatPage()));
-                  },
-                ),
-                _buildMenuCard(
-                  icon: Icons.grade,
-                  title: "Result",
-                  color: Colors.green,
-                  onTap: () {
-                    Navigator.push(context,
-                        MaterialPageRoute(builder: (_) => const ResultPage()));
-                  },
-                ),
-                _buildMenuCard(
-                  icon: Icons.directions_bus,
-                  title: "Bus Schedule",
-                  color: Colors.orange,
-                  onTap: () {
-                    Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                            builder: (_) => const BusSchedulePage()));
-                  },
-                ),
-                _buildMenuCard(
-                  icon: Icons.info,
-                  title: "LU Info",
-                  color: Colors.purple,
-                  onTap: () {
-                    Navigator.push(context,
-                        MaterialPageRoute(builder: (_) => const LUInfoPage()));
-                  },
-                ),
-                _buildMenuCard(
-                  icon: Icons.calendar_month,
-                  title: "Routine",
-                  color: Colors.red,
-                  onTap: () {
-                    Navigator.push(context,
-                        MaterialPageRoute(builder: (_) => const RoutinePage()));
-                  },
-                ),
-                _buildMenuCard(
-                  icon: Icons.settings,
-                  title: "Settings",
-                  color: Colors.teal,
-                  onTap: () {
-                    Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                            builder: (_) => const SettingsPage()));
-                  },
-                ),
-              ],
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  static Widget _buildMenuCard({
-    required IconData icon,
-    required String title,
-    required Color color,
-    required VoidCallback onTap,
-  }) {
-    return Card(
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-      elevation: 4,
-      child: InkWell(
-        onTap: onTap,
-        borderRadius: BorderRadius.circular(16),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(icon, size: 50, color: color),
-            const SizedBox(height: 10),
-            Text(
-              title,
-              style: const TextStyle(
-                  fontSize: 16, fontWeight: FontWeight.bold),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-}
-
-
+// Dummy pages for navigation
 class ChatPage extends StatelessWidget {
   const ChatPage({super.key});
   @override
@@ -212,13 +49,11 @@ class SettingsPage extends StatelessWidget {
   }
 }
 
-
-
 Widget _buildDummyPage(BuildContext context, String title) {
   return Scaffold(
     appBar: AppBar(
-      title: Text(title),
       backgroundColor: Colors.deepPurple,
+      title: Text(title),
     ),
     body: Center(
       child: Text(
@@ -227,4 +62,180 @@ Widget _buildDummyPage(BuildContext context, String title) {
       ),
     ),
   );
+}
+
+class HomePage extends StatelessWidget {
+  const HomePage({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      body: Stack(
+        fit: StackFit.expand,
+        children: [
+          // Background image (fixed)
+          Image.asset(
+            "assets/campus.jpeg",
+            fit: BoxFit.cover,
+          ),
+
+          // Transparent overlay for readability
+          Container(color: Colors.black.withOpacity(0.25)),
+
+          // Content (scrollable)
+          CustomScrollView(
+            slivers: [
+              SliverAppBar(
+                backgroundColor: Colors.transparent, // transparent appbar
+                expandedHeight: 140, // ছোট height
+                pinned: true,
+                flexibleSpace: FlexibleSpaceBar(
+                  centerTitle: true,
+                  background: Stack(
+                    fit: StackFit.expand,
+                    children: [
+                      Image.asset(
+                        "assets/campus.jpeg", // logo'r পিছনেও campus background
+                        fit: BoxFit.cover,
+                      ),
+                      Container(
+                        color: Colors.black.withOpacity(0.3), // dim overlay
+                      ),
+                      Center(
+                        child: Column(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Image.asset(
+                              "assets/logo.jpeg",
+                              height: 60, // ছোট logo
+                            ),
+                            const SizedBox(height: 5),
+                            const Text(
+                              "MyLU",
+                              style: TextStyle(
+                                fontSize: 18,
+                                fontWeight: FontWeight.bold,
+                                color: Colors.white,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+
+              // Grid Menu
+              SliverPadding(
+                padding: const EdgeInsets.all(12),
+                sliver: SliverGrid.count(
+                  crossAxisCount: 2,
+                  crossAxisSpacing: 12,
+                  mainAxisSpacing: 12,
+                  children: [
+                    _buildMenuCard(
+                      title: "Chat App",
+                      image: "assets/chat.jpeg",
+                      onTap: () {
+                        Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                                builder: (_) => const ChatPage()));
+                      },
+                    ),
+                    _buildMenuCard(
+                      title: "Result",
+                      image: "assets/result.jpeg",
+                      onTap: () {
+                        Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                                builder: (_) => const ResultPage()));
+                      },
+                    ),
+                    _buildMenuCard(
+                      title: "Bus Schedule",
+                      image: "assets/bus.png",
+                      onTap: () {
+                        Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                                builder: (_) => const BusSchedulePage()));
+                      },
+                    ),
+                    _buildMenuCard(
+                      title: "LU Info",
+                      image: "assets/info.png",
+                      onTap: () {
+                        Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                                builder: (_) => const LUInfoPage()));
+                      },
+                    ),
+                    _buildMenuCard(
+                      title: "Routine",
+                      image: "assets/routine.webp",
+                      onTap: () {
+                        Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                                builder: (_) => const RoutinePage()));
+                      },
+                    ),
+                    _buildMenuCard(
+                      title: "Settings",
+                      image: "assets/setting.jpeg",
+                      onTap: () {
+                        Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                                builder: (_) => const SettingsPage()));
+                      },
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  // Menu Card Widget
+  static Widget _buildMenuCard({
+    required String title,
+    required String image,
+    required VoidCallback onTap,
+  }) {
+    return Card(
+      color: Colors.white.withOpacity(0.85), // semi-transparent card
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+      elevation: 5,
+      clipBehavior: Clip.antiAlias,
+      child: InkWell(
+        onTap: onTap,
+        child: Stack(
+          fit: StackFit.expand,
+          children: [
+            Image.asset(image, fit: BoxFit.cover),
+            Container(color: Colors.black.withOpacity(0.4)),
+            Center(
+              child: Text(
+                title,
+                textAlign: TextAlign.center,
+                style: const TextStyle(
+                  fontSize: 18,
+                  fontWeight: FontWeight.bold,
+                  color: Colors.white,
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
 }

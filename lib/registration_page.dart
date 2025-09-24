@@ -5,235 +5,104 @@ import 'package:my_lu/home_page.dart';
 import 'login_page.dart';
 import 'verify_email_page.dart';
 
-const kDefaultPadding = EdgeInsets.symmetric(horizontal: 20.0, vertical: 10.0);
-const kTextFieldColor = Colors.grey;
-const kPrimaryColor = Colors.blue;
-
-const TextStyle subtitle = TextStyle(
-  fontSize: 16,
-  color: Colors.grey,
-);
-
-const TextStyle titleText = TextStyle(
-  fontSize: 28,
-  fontWeight: FontWeight.bold,
-  color: Colors.black,
-);
-
-class RegistrationPage extends StatelessWidget {
+class RegistrationPage extends StatefulWidget {
   const RegistrationPage({super.key});
 
   @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      body: SingleChildScrollView(
-        child: Column(
-          children: [
-            const SizedBox(height: 70),
-            const Padding(
-              padding: kDefaultPadding,
-              child: Text(
-                'Create Account',
-                style: titleText,
-              ),
-            ),
-            const SizedBox(height: 5),
-            Padding(
-              padding: kDefaultPadding,
-              child: Row(
-                children: [
-                  const Text('Already a member?', style: subtitle),
-                  const SizedBox(width: 5),
-                  GestureDetector(
-                    onTap: () {
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(builder: (context) => LoginPage()),
-                      );
-                    },
-                    child: const Text(
-                      'Login',
-                      style: TextStyle(
-                        decoration: TextDecoration.underline,
-                        decorationThickness: 1,
-                        color: kPrimaryColor,
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-            const SizedBox(height: 10),
-            RegistrationForm(),
-          ],
-        ),
-      ),
-    );
-  }
+  State<RegistrationPage> createState() => _RegistrationPageState();
 }
 
-class RegistrationForm extends StatefulWidget {
-  @override
-  State<RegistrationForm> createState() => _RegistrationFormState();
-}
-
-class _RegistrationFormState extends State<RegistrationForm> {
+class _RegistrationPageState extends State<RegistrationPage> {
   final _formKey = GlobalKey<FormState>();
-
-  final TextEditingController _firstNameController = TextEditingController();
-  final TextEditingController _lastNameController = TextEditingController();
-  final TextEditingController _emailController = TextEditingController();
-  final TextEditingController _phoneController = TextEditingController();
-  final TextEditingController _passwordController = TextEditingController();
-  final TextEditingController _confirmPasswordController = TextEditingController();
-
-  bool _isObscurePassword = true;
-  bool _isObscureConfirm = true;
-
-  bool _loading = false;
+  final emailController = TextEditingController();
+  final passwordController = TextEditingController();
 
   Future<void> _register() async {
-    if (!_formKey.currentState!.validate()) return;
+    if (_formKey.currentState!.validate()) {
+      try {
+        UserCredential userCredential = await FirebaseAuth.instance
+            .createUserWithEmailAndPassword(
+          email: emailController.text.trim(),
+          password: passwordController.text.trim(),
+        );
 
-    setState(() => _loading = true);
+        await userCredential.user!.sendEmailVerification();
 
-    try {
-      // Firebase Authentication
-      UserCredential userCredential = await FirebaseAuth.instance
-          .createUserWithEmailAndPassword(
-              email: _emailController.text.trim(),
-              password: _passwordController.text.trim());
-
-      // Firestore user details
-      await FirebaseFirestore.instance
-          .collection('users')
-          .doc(userCredential.user!.uid)
-          .set({
-        'firstName': _firstNameController.text.trim(),
-        'lastName': _lastNameController.text.trim(),
-        'phone': _phoneController.text.trim(),
-        'email': _emailController.text.trim(),
-        'createdAt': FieldValue.serverTimestamp(),
-      });
-
-      // Optional: Email verification
-      await userCredential.user?.sendEmailVerification();
-
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Registration Successful! Please verify your email.')),
-      );
-
-      // Clear fields or navigate
-      _formKey.currentState!.reset();
-
-    } on FirebaseAuthException catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(e.message ?? 'Registration failed')),
-      );
-    } catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Something went wrong: $e')),
-      );
-    } finally {
-      setState(() => _loading = false);
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text("Registration successful! Verify your email."),
+          ),
+        );
+        Navigator.pop(context);
+      } catch (e) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text("Registration Failed: $e")),
+        );
+      }
     }
   }
 
   @override
   Widget build(BuildContext context) {
-    return Padding(
-      padding: kDefaultPadding,
-      child: Form(
-        key: _formKey,
-        child: Column(
-          children: [
-            buildInputForm('First Name', _firstNameController, false),
-            buildInputForm('Last Name', _lastNameController, false),
-            buildInputForm('Email', _emailController, false),
-            buildInputForm('Phone', _phoneController, false),
-            buildInputForm('Password', _passwordController, true, true),
-            buildInputForm('Confirm Password', _confirmPasswordController, true, false),
-            const SizedBox(height: 20),
-            ElevatedButton(
-              style: ElevatedButton.styleFrom(
-                backgroundColor: kPrimaryColor,
-                minimumSize: const Size(double.infinity, 50),
+    return Scaffold(
+      backgroundColor: Colors.deepPurple.shade50,
+      body: Center(
+        child: SingleChildScrollView(
+          padding: const EdgeInsets.all(24.0),
+          child: Card(
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+            elevation: 8,
+            child: Padding(
+              padding: const EdgeInsets.all(24.0),
+              child: Form(
+                key: _formKey,
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Text("Create Account 📝",
+                        style: Theme.of(context).textTheme.headlineSmall),
+                    const SizedBox(height: 20),
+                    TextFormField(
+                      controller: emailController,
+                      decoration: const InputDecoration(
+                        labelText: "Email",
+                        border: OutlineInputBorder(),
+                        prefixIcon: Icon(Icons.email),
+                      ),
+                      validator: (value) =>
+                          value!.contains("@") ? null : "Enter valid email",
+                    ),
+                    const SizedBox(height: 15),
+                    TextFormField(
+                      controller: passwordController,
+                      obscureText: true,
+                      decoration: const InputDecoration(
+                        labelText: "Password",
+                        border: OutlineInputBorder(),
+                        prefixIcon: Icon(Icons.lock),
+                      ),
+                      validator: (value) =>
+                          value!.length < 6 ? "Password must be 6+ chars" : null,
+                    ),
+                    const SizedBox(height: 20),
+                    ElevatedButton(
+                      onPressed: _register,
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: Colors.deepPurple,
+                        minimumSize: const Size.fromHeight(50),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                      ),
+                      child: const Text("Register"),
+                    ),
+                  ],
+                ),
               ),
-              onPressed: _loading ? null : _register,
-              child: _loading
-                  ? const CircularProgressIndicator(color: Colors.white)
-                  : const Text('Register'),
             ),
-          ],
+          ),
         ),
       ),
-    );
-  }
-
-  Padding buildInputForm(
-      String hint, TextEditingController controller, bool isPassword,
-      [bool isPasswordField = true]) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 5),
-      child: TextFormField(
-        controller: controller,
-        obscureText: isPassword
-            ? (isPasswordField ? _isObscurePassword : _isObscureConfirm)
-            : false,
-        validator: (value) {
-          if (value == null || value.isEmpty) {
-            return 'Please enter $hint';
-          }
-          if (hint == 'Email' && !RegExp(r'^[^@]+@[^@]+\.[^@]+').hasMatch(value)) {
-            return 'Enter a valid email';
-          }
-          if (hint == 'Password') {
-            if (value.length < 6 ||
-                !RegExp(r'^(?=.*[A-Za-z])(?=.*\d)[A-Za-z\d]{6,}$').hasMatch(value)) {
-              return 'Password must be at least 6 characters and contain at least one letter and one number';
-            }
-          }
-          if (hint == 'Confirm Password' && value != _passwordController.text) {
-            return 'Passwords do not match';
-          }
-          return null;
-        },
-        decoration: InputDecoration(
-          hintText: hint,
-          hintStyle: const TextStyle(color: kTextFieldColor),
-          focusedBorder: const UnderlineInputBorder(
-              borderSide: BorderSide(color: kPrimaryColor)),
-          suffixIcon: isPassword
-              ? IconButton(
-                  onPressed: () {
-                    setState(() {
-                      if (isPasswordField) {
-                        _isObscurePassword = !_isObscurePassword;
-                      } else {
-                        _isObscureConfirm = !_isObscureConfirm;
-                      }
-                    });
-                  },
-                  icon: Icon(
-                    (isPasswordField ? _isObscurePassword : _isObscureConfirm)
-                        ? Icons.visibility_off
-                        : Icons.visibility,
-                    color: kTextFieldColor,
-                  ),
-                )
-              : null,
-        ),
-      ),
-    );
-  }
-}
-
-// Simple placeholder for Login Page
-class LoginPage extends StatelessWidget {
-  @override
-  Widget build(BuildContext context) {
-    return const Scaffold(
-      body: Center(child: Text('Login Page')),
     );
   }
 }

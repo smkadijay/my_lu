@@ -26,10 +26,11 @@ flutter:
     - assets/lu.jpeg
     - assets/reg.jpeg
     - assets/campus.jpeg
-    - assets/chat.jpg
-    - assets/result.jpg
-    - assets/routine.jpg
-    - assets/setting.jpg
+    - assets/chat.jpeg
+    - assets/result.jpeg
+    - assets/routine.webp
+    - assets/setting.jpeg
     - assets/info.png
+    - assets/bus.png
     - assets/logo.jpeg
 
