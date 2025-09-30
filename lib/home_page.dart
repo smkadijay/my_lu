@@ -1,21 +1,23 @@
 import 'package:flutter/material.dart';
+import 'package:my_lu/chat_app/chat_page.dart' hide getChatId;
+import 'package:my_lu/chat_app/chat_input.dart';
+import 'package:firebase_auth/firebase_auth.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:my_lu/chat_app/chat_utils.dart';
+import 'package:my_lu/chat_app/user_list.dart';
+import 'package:my_lu/result_app/result_page.dart';
 
-// Dummy pages for navigation
-class ChatPage extends StatelessWidget {
-  const ChatPage({super.key});
+
+
+
+class DummyChatPage extends StatelessWidget {
+  const DummyChatPage({super.key});
   @override
   Widget build(BuildContext context) {
-    return _buildDummyPage(context, "Chat App");
+    return _buildDummyPage(context, "Chat App (Dummy)");
   }
 }
 
-class ResultPage extends StatelessWidget {
-  const ResultPage({super.key});
-  @override
-  Widget build(BuildContext context) {
-    return _buildDummyPage(context, "Result Page");
-  }
-}
 
 class BusSchedulePage extends StatelessWidget {
   const BusSchedulePage({super.key});
@@ -51,10 +53,7 @@ class SettingsPage extends StatelessWidget {
 
 Widget _buildDummyPage(BuildContext context, String title) {
   return Scaffold(
-    appBar: AppBar(
-      backgroundColor: Colors.deepPurple,
-      title: Text(title),
-    ),
+    appBar: AppBar(backgroundColor: Colors.deepPurple, title: Text(title)),
     body: Center(
       child: Text(
         title,
@@ -74,10 +73,7 @@ class HomePage extends StatelessWidget {
         fit: StackFit.expand,
         children: [
           // Background image (fixed)
-          Image.asset(
-            "assets/campus.jpeg",
-            fit: BoxFit.cover,
-          ),
+          Image.asset("assets/campus.jpeg", fit: BoxFit.cover),
 
           // Transparent overlay for readability
           Container(color: Colors.black.withOpacity(0.25)),
@@ -111,7 +107,7 @@ class HomePage extends StatelessWidget {
                             ),
                             const SizedBox(height: 5),
                             const Text(
-                              "MyLU",
+                              "Leading University",
                               style: TextStyle(
                                 fontSize: 18,
                                 fontWeight: FontWeight.bold,
@@ -135,33 +131,47 @@ class HomePage extends StatelessWidget {
                   mainAxisSpacing: 12,
                   children: [
                     _buildMenuCard(
-                      title: "Chat App",
-                      image: "assets/chat.jpeg",
-                      onTap: () {
-                        Navigator.push(
-                            context,
-                            MaterialPageRoute(
-                                builder: (_) => const ChatPage()));
-                      },
-                    ),
+                        title: "Chat App",
+                        image: "assets/chat.jpeg",
+                        onTap: () {
+                          final user = FirebaseAuth.instance.currentUser;
+
+                          if (user != null) {
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (_) => UsersListPage(),
+                              ),
+                            );
+                          } else {
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              const SnackBar(content: Text("Please log in first")),
+                            );
+                          }
+                        },
+                      ),
+
                     _buildMenuCard(
                       title: "Result",
                       image: "assets/result.jpeg",
                       onTap: () {
                         Navigator.push(
-                            context,
-                            MaterialPageRoute(
-                                builder: (_) => const ResultPage()));
+                          context,
+                          MaterialPageRoute(builder: (_) => const ResultPage()),
+                        );
                       },
                     ),
+
                     _buildMenuCard(
                       title: "Bus Schedule",
                       image: "assets/bus.png",
                       onTap: () {
                         Navigator.push(
-                            context,
-                            MaterialPageRoute(
-                                builder: (_) => const BusSchedulePage()));
+                          context,
+                          MaterialPageRoute(
+                            builder: (_) => const BusSchedulePage(),
+                          ),
+                        );
                       },
                     ),
                     _buildMenuCard(
@@ -169,9 +179,9 @@ class HomePage extends StatelessWidget {
                       image: "assets/info.png",
                       onTap: () {
                         Navigator.push(
-                            context,
-                            MaterialPageRoute(
-                                builder: (_) => const LUInfoPage()));
+                          context,
+                          MaterialPageRoute(builder: (_) => const LUInfoPage()),
+                        );
                       },
                     ),
                     _buildMenuCard(
@@ -179,9 +189,11 @@ class HomePage extends StatelessWidget {
                       image: "assets/routine.webp",
                       onTap: () {
                         Navigator.push(
-                            context,
-                            MaterialPageRoute(
-                                builder: (_) => const RoutinePage()));
+                          context,
+                          MaterialPageRoute(
+                            builder: (_) => const RoutinePage(),
+                          ),
+                        );
                       },
                     ),
                     _buildMenuCard(
@@ -189,9 +201,11 @@ class HomePage extends StatelessWidget {
                       image: "assets/setting.jpeg",
                       onTap: () {
                         Navigator.push(
-                            context,
-                            MaterialPageRoute(
-                                builder: (_) => const SettingsPage()));
+                          context,
+                          MaterialPageRoute(
+                            builder: (_) => const SettingsPage(),
+                          ),
+                        );
                       },
                     ),
                   ],
@@ -239,3 +253,4 @@ class HomePage extends StatelessWidget {
     );
   }
 }
+

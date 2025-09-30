@@ -1,4 +1,4 @@
-/*import 'package:flutter/material.dart';
+import 'package:flutter/material.dart';
 
 
 class CgpaCalculatorPage extends StatefulWidget {
@@ -215,7 +215,7 @@ class _CourseCard extends StatelessWidget {
                         fontWeight: FontWeight.bold, fontSize: 16)),
                 const Spacer(),
                 IconButton(
-                  icon: const Icon(Icons.delete_outline_rounded, color: Colors.red),
+                  icon: const Icon(Icons.delete_outline_rounded, color: Color.fromARGB(255, 89, 196, 128)),
                   onPressed: onRemove,
                   tooltip: 'Remove',
                 )
@@ -269,4 +269,3 @@ class _CourseEntry {
       TextEditingController(text: "3.0");
   String selectedGrade = 'A';
 }
-*/
