@@ -2,141 +2,153 @@ import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'services/firestore_service.dart';
-import 'home_page.dart';
 import 'registration_page.dart';
+import 'package:my_lu/home_page.dart';
 
 class LoginPage extends StatefulWidget {
-  const LoginPage({super.key});
-
   @override
   State<LoginPage> createState() => _LoginPageState();
 }
 
 class _LoginPageState extends State<LoginPage> {
   final _formKey = GlobalKey<FormState>();
-  final emailController = TextEditingController();
-  final passwordController = TextEditingController();
-  bool isLoading = false;
+  final FirebaseAuth _auth = FirebaseAuth.instance;
 
-  Future<void> _login() async {
-    if (!_formKey.currentState!.validate()) return;
+  final TextEditingController _emailController = TextEditingController();
+  final TextEditingController _passwordController = TextEditingController();
 
-    setState(() => isLoading = true);
+  bool _isLoading = false;
 
-    try {
-      UserCredential userCredential =
-          await FirebaseAuth.instance.signInWithEmailAndPassword(
-        email: emailController.text.trim(),
-        password: passwordController.text.trim(),
-      );
+  void loginUser() async {
+    if (_formKey.currentState!.validate()) {
+      setState(() { _isLoading = true; });
 
-      final user = userCredential.user;
-      if (user != null) {
-        if (!user.emailVerified) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text("Please verify your email first!")),
-          );
-          setState(() => isLoading = false);
-          return;
-        }
+      try {
+        UserCredential user = await _auth.signInWithEmailAndPassword(
+          email: _emailController.text.trim(),
+          password: _passwordController.text.trim(),
+        );
 
-        await saveUserToFirestore(user);
         Navigator.pushReplacement(
           context,
-          MaterialPageRoute(builder: (context) => const HomePage()),
+          MaterialPageRoute(builder: (_) => HomePage()),
         );
+      } on FirebaseAuthException catch (e) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(e.message ?? "Login failed")),
+        );
+      } finally {
+        setState(() { _isLoading = false; });
       }
-    } on FirebaseAuthException catch (e) {
+    }
+  }
+
+  void resetPassword() async {
+    if (_emailController.text.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(e.message ?? "Login failed")),
+        SnackBar(content: Text("Please enter your email to reset password")),
+      );
+      return;
+    }
+
+    try {
+      await _auth.sendPasswordResetEmail(email: _emailController.text.trim());
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text("Password reset email sent")),
       );
     } catch (e) {
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text("Login failed: $e")),
+        SnackBar(content: Text("Error sending reset email")),
       );
-    } finally {
-      setState(() => isLoading = false);
     }
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.deepPurple.shade50,
-      body: Center(
-        child: SingleChildScrollView(
-          padding: const EdgeInsets.all(24),
-          child: Card(
-            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-            elevation: 10,
-            child: Padding(
-              padding: const EdgeInsets.all(24),
+      body: Stack(
+        fit: StackFit.expand,
+        children: [
+          Image.asset(
+            "assets/uni.jpeg",
+            fit: BoxFit.cover,
+          ),
+          Container(
+            color: Colors.black.withOpacity(0.5), // opacity overlay
+          ),
+          Center(
+            child: SingleChildScrollView(
+              padding: EdgeInsets.all(20),
               child: Form(
                 key: _formKey,
                 child: Column(
-                  mainAxisSize: MainAxisSize.min,
                   children: [
                     Text(
-                      "Welcome Back",
-                      style: Theme.of(context)
-                          .textTheme
-                          .headlineSmall
-                          ?.copyWith(color: Colors.deepPurple),
+                      "My_LU Login",
+                      style: TextStyle(color: Colors.white, fontSize: 32, fontWeight: FontWeight.bold),
                     ),
-                    const SizedBox(height: 20),
+                    SizedBox(height: 40),
                     TextFormField(
-                      controller: emailController,
-                      decoration: const InputDecoration(
-                        labelText: "Email",
-                        border: OutlineInputBorder(),
-                        prefixIcon: Icon(Icons.email),
+                      controller: _emailController,
+                      keyboardType: TextInputType.emailAddress,
+                      decoration: InputDecoration(
+                        hintText: "Email",
+                        filled: true,
+                        fillColor: Colors.white.withOpacity(0.8),
+                        border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
                       ),
-                      validator: (value) =>
-                          value!.contains("@") ? null : "Enter valid email",
-                    ),
-                    const SizedBox(height: 15),
-                    TextFormField(
-                      controller: passwordController,
-                      obscureText: true,
-                      decoration: const InputDecoration(
-                        labelText: "Password",
-                        border: OutlineInputBorder(),
-                        prefixIcon: Icon(Icons.lock),
-                      ),
-                      validator: (value) =>
-                          value!.length < 6 ? "Password too short" : null,
-                    ),
-                    const SizedBox(height: 25),
-                    isLoading
-                        ? const CircularProgressIndicator()
-                        : ElevatedButton(
-                            onPressed: _login,
-                            style: ElevatedButton.styleFrom(
-                              backgroundColor: Colors.deepPurple,
-                              minimumSize: const Size.fromHeight(50),
-                              shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(12),
-                              ),
-                            ),
-                            child: const Text("Login"),
-                          ),
-                    const SizedBox(height: 10),
-                    TextButton(
-                      onPressed: () {
-                        Navigator.pushReplacement(
-                          context,
-                          MaterialPageRoute(
-                              builder: (context) => const RegistrationPage()),
-                        );
+                      validator: (value) {
+                        if (value == null || value.isEmpty) return "Please enter email";
+                        if (!RegExp(r'^[^@]+@[^@]+\.[^@]+').hasMatch(value)) return "Enter valid email";
+                        return null;
                       },
-                      child: const Text("Don’t have an account? Register"),
                     ),
+                    SizedBox(height: 20),
+                    TextFormField(
+                      controller: _passwordController,
+                      obscureText: true,
+                      decoration: InputDecoration(
+                        hintText: "Password",
+                        filled: true,
+                        fillColor: Colors.white.withOpacity(0.8),
+                        border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
+                      ),
+                      validator: (value) {
+                        if (value == null || value.isEmpty) return "Please enter password";
+                        if (value.length < 6) return "Password must be at least 6 characters";
+                        return null;
+                      },
+                    ),
+                    SizedBox(height: 20),
+                    _isLoading
+                        ? CircularProgressIndicator()
+                        : ElevatedButton(
+                            onPressed: loginUser,
+                            child: Text("Login"),
+                          ),
+                    TextButton(
+                      onPressed: resetPassword,
+                      child: Text("Forgot Password?", style: TextStyle(color: Colors.white)),
+                    ),
+                    SizedBox(height: 10),
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Text("Don't have an account?", style: TextStyle(color: Colors.white)),
+                        TextButton(
+                          onPressed: () {
+                            Navigator.push(context, MaterialPageRoute(builder: (_) => RegistrationPage()));
+                          },
+                          child: Text("Register"),
+                        )
+                      ],
+                    )
                   ],
                 ),
               ),
             ),
-          ),
-        ),
+          )
+        ],
       ),
     );
   }

@@ -1,53 +1,19 @@
 import 'package:flutter/material.dart';
 import 'package:my_lu/chat_app/chat_page.dart' hide getChatId;
-import 'package:my_lu/chat_app/chat_input.dart';
 import 'package:firebase_auth/firebase_auth.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:my_lu/chat_app/chat_utils.dart';
 import 'package:my_lu/chat_app/user_list.dart';
 import 'package:my_lu/result_app/result_page.dart';
-
-
-
-
-class DummyChatPage extends StatelessWidget {
-  const DummyChatPage({super.key});
-  @override
-  Widget build(BuildContext context) {
-    return _buildDummyPage(context, "Chat App (Dummy)");
-  }
-}
-
-
-class BusSchedulePage extends StatelessWidget {
-  const BusSchedulePage({super.key});
-  @override
-  Widget build(BuildContext context) {
-    return _buildDummyPage(context, "Bus Schedule");
-  }
-}
-
-class LUInfoPage extends StatelessWidget {
-  const LUInfoPage({super.key});
-  @override
-  Widget build(BuildContext context) {
-    return _buildDummyPage(context, "LU Info");
-  }
-}
+import 'package:my_lu/notice_page.dart';
+import 'package:my_lu/items/bus_schedule_page.dart';
+import 'package:my_lu/campus_map/map_selection_page.dart';
+import 'package:my_lu/lu_info/lu_info_page.dart';
+import 'package:my_lu/chat_app/user_list.dart';
 
 class RoutinePage extends StatelessWidget {
   const RoutinePage({super.key});
   @override
   Widget build(BuildContext context) {
     return _buildDummyPage(context, "Routine Page");
-  }
-}
-
-class SettingsPage extends StatelessWidget {
-  const SettingsPage({super.key});
-  @override
-  Widget build(BuildContext context) {
-    return _buildDummyPage(context, "Settings Page");
   }
 }
 
@@ -131,25 +97,25 @@ class HomePage extends StatelessWidget {
                   mainAxisSpacing: 12,
                   children: [
                     _buildMenuCard(
-                        title: "Chat App",
-                        image: "assets/chat.jpeg",
-                        onTap: () {
-                          final user = FirebaseAuth.instance.currentUser;
+                      title: "Chat App",
+                      image: "assets/chat.jpeg",
+                      onTap: () {
+                        final user = FirebaseAuth.instance.currentUser;
 
-                          if (user != null) {
-                            Navigator.push(
-                              context,
-                              MaterialPageRoute(
-                                builder: (_) => UsersListPage(),
-                              ),
-                            );
-                          } else {
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              const SnackBar(content: Text("Please log in first")),
-                            );
-                          }
-                        },
-                      ),
+                        if (user != null) {
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(builder: (_) => UsersList()),
+                          );
+                        } else {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            const SnackBar(
+                              content: Text("Please log in first"),
+                            ),
+                          );
+                        }
+                      },
+                    ),
 
                     _buildMenuCard(
                       title: "Result",
@@ -169,8 +135,18 @@ class HomePage extends StatelessWidget {
                         Navigator.push(
                           context,
                           MaterialPageRoute(
-                            builder: (_) => const BusSchedulePage(),
+                            builder: (context) => BusSchedulePage(),
                           ),
+                        );
+                      },
+                    ),
+                    _buildMenuCard(
+                      title: "Campus Map",
+                      image: "assets/campus_map.png", // add your own image in assets folder
+                      onTap: () {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(builder: (_) => const MapSelectionPage()),
                         );
                       },
                     ),
@@ -180,7 +156,7 @@ class HomePage extends StatelessWidget {
                       onTap: () {
                         Navigator.push(
                           context,
-                          MaterialPageRoute(builder: (_) => const LUInfoPage()),
+                          MaterialPageRoute(builder: (_) => LuInfoPage()),
                         );
                       },
                     ),
@@ -198,12 +174,12 @@ class HomePage extends StatelessWidget {
                     ),
                     _buildMenuCard(
                       title: "Settings",
-                      image: "assets/setting.jpeg",
+                      image: "assets/notice.webp",
                       onTap: () {
                         Navigator.push(
                           context,
                           MaterialPageRoute(
-                            builder: (_) => const SettingsPage(),
+                            builder: (_) => const NoticePage(),
                           ),
                         );
                       },
@@ -253,4 +229,5 @@ class HomePage extends StatelessWidget {
     );
   }
 }
+
 

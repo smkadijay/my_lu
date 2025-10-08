@@ -4,16 +4,16 @@ import 'package:url_launcher/url_launcher.dart';
 class CheckResultPage extends StatelessWidget {
   const CheckResultPage({super.key});
 
-  Future<void> _openResultSite(BuildContext context) async {
+  Future<void> _openResultSite(BuildContext context) async {  
     const String resultUrl = "https://lus.ac.bd/result/";
     final Uri url = Uri.parse(resultUrl);
 
     if (await canLaunchUrl(url)) {
       await launchUrl(url, mode: LaunchMode.externalApplication);
     } else {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text("Cannot open website")),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text("Cannot open website")));
     }
   }
 
@@ -52,7 +52,9 @@ class CheckResultPage extends StatelessWidget {
                     borderRadius: BorderRadius.circular(12),
                     child: Container(
                       padding: const EdgeInsets.symmetric(
-                          vertical: 16, horizontal: 20),
+                        vertical: 16,
+                        horizontal: 20,
+                      ),
                       decoration: BoxDecoration(
                         color: Colors.purple.shade100,
                         borderRadius: BorderRadius.circular(12),
@@ -61,7 +63,7 @@ class CheckResultPage extends StatelessWidget {
                             color: Colors.grey.withOpacity(0.3),
                             blurRadius: 8,
                             offset: const Offset(0, 4),
-                          )
+                          ),
                         ],
                       ),
                       child: const Text(

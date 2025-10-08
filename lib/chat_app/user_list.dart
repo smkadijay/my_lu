@@ -1,56 +1,61 @@
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
-import '../services/firestore_service.dart';
-import 'chat_page.dart' hide getChatId;
+import 'chat_page.dart';
 import 'chat_utils.dart';
 
-class UsersListPage extends StatelessWidget {
-  const UsersListPage({super.key});
+class UsersList extends StatelessWidget {
+  const UsersList({super.key});
 
   @override
   Widget build(BuildContext context) {
-    final currentUser = FirebaseAuth.instance.currentUser;
+    final current = FirebaseAuth.instance.currentUser;
+    if (current == null) return const Scaffold(body: Center(child: Text('Please login')));
+
+    final currentUserId = current.uid;
 
     return Scaffold(
-      appBar: AppBar(
-        title: const Text("All Users"),
-        backgroundColor: Colors.deepPurple,
-      ),
+      appBar: AppBar(title: const Text('All Users')),
       body: StreamBuilder<QuerySnapshot>(
         stream: FirebaseFirestore.instance.collection('users').snapshots(),
-        builder: (context, snapshot) {
-          if (!snapshot.hasData) {
-            return const Center(child: CircularProgressIndicator());
-          }
+        builder: (context, snap) {
+          if (!snap.hasData) return const Center(child: CircularProgressIndicator());
+          final docs = snap.data!.docs;
+          final others = docs.where((d) => (d.data() as Map<String, dynamic>)['uid'] != currentUserId).toList();
 
-          final users = snapshot.data!.docs;
+          final display = others.isEmpty ? docs : others;
 
           return ListView.builder(
-            itemCount: users.length,
-            itemBuilder: (context, index) {
-              final user = users[index].data() as Map<String, dynamic>;
-
-              // Skip current user
-              if (user['uid'] == currentUser!.uid) {
-                return const SizedBox.shrink();
-              }
+            itemCount: display.length,
+            itemBuilder: (context, i) {
+              final data = display[i].data() as Map<String, dynamic>;
+              final receiverId = data['uid'] ?? '';
+              final chatId = getChatId(currentUserId, receiverId);
 
               return ListTile(
-                leading: const CircleAvatar(
-                  child: Icon(Icons.person, color: Colors.white),
-                  backgroundColor: Colors.deepPurple,
+                leading: CircleAvatar(
+                  backgroundImage: data['avatar'] != null && data['avatar'] != '' 
+                    ? NetworkImage(data['avatar'])
+                    : null,
+                  child: (data['avatar'] == null || data['avatar'] == '') ? const Icon(Icons.person) : null,
                 ),
-                title: Text(user['name'] ?? "Unknown"),
-                subtitle: Text(user['email'] ?? ""),
+                title: Text(data['name'] ?? 'No name'),
+                subtitle: Text(data['email'] ?? ''),
                 onTap: () {
-                  String chatId = getChatId(currentUser.uid, user['uid']);
+                  if (receiverId.isEmpty || chatId.isEmpty) {
+                    ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Invalid user id')));
+                    return;
+                  }
                   Navigator.push(
                     context,
                     MaterialPageRoute(
                       builder: (_) => ChatPage(
                         chatId: chatId,
-                        currentUserId: currentUser.uid,
+                        currentUserId: currentUserId,
+                        receiverId: receiverId,
+                        receiverEmail: data['email'] ?? '',
+                        receiverName: data['name'] ?? '',
+                        receiverAvatar: data['avatar'] ?? '',
                       ),
                     ),
                   );

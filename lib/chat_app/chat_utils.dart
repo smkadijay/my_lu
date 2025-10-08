@@ -11,3 +11,4 @@ String getChatId(String user1, String user2) {
     return "${user2}_$user1";
   }
 }
+

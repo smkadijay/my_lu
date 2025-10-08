@@ -1,61 +1,89 @@
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
-import '../../widgets/chat_bubble.dart';
+import 'package:my_lu/widgets/chat_bubble.dart';
 import 'chat_input.dart';
-
-String getChatId(String user1, String user2) {
-  if (user1.compareTo(user2) < 0) {
-    return "${user1}_$user2";
-  } else {
-    return "${user2}_$user1";
-  }
-}
 
 class ChatPage extends StatelessWidget {
   final String chatId;
   final String currentUserId;
+  final String receiverId;
+  final String receiverEmail;
+  final String receiverName;
+  final String receiverAvatar;
 
-  const ChatPage({super.key, required this.chatId, required this.currentUserId});
+  const ChatPage({
+    super.key,
+    required this.chatId,
+    required this.currentUserId,
+    required this.receiverId,
+    required this.receiverEmail,
+    required this.receiverName,
+    required this.receiverAvatar,
+  });
 
   @override
   Widget build(BuildContext context) {
-    final messagesRef = FirebaseFirestore.instance
+    if (chatId.isEmpty || currentUserId.isEmpty) {
+      return Scaffold(body: Center(child: Text('Invalid chat')));
+    }
+
+    final messagesQuery = FirebaseFirestore.instance
         .collection('chats')
         .doc(chatId)
         .collection('messages')
         .orderBy('timestamp', descending: false);
 
     return Scaffold(
-      appBar: AppBar(title: const Text("Chat")),
+      appBar: AppBar(
+        backgroundColor: Colors.white,
+        iconTheme: const IconThemeData(color: Colors.black87),
+        elevation: 1,
+        title: Row(
+          children: [
+            CircleAvatar(backgroundImage: receiverAvatar.isNotEmpty ? NetworkImage(receiverAvatar) : null, radius: 18),
+            const SizedBox(width: 10),
+            Text(receiverName, style: const TextStyle(color: Colors.black87)),
+          ],
+        ),
+      ),
       body: Container(
-  decoration: const BoxDecoration(
-    image: DecorationImage(
-      image: AssetImage("assets/chat_bg.jpeg"), // add your background image in assets
-      fit: BoxFit.cover,
-            ),
+        decoration: BoxDecoration(
+          gradient: LinearGradient(
+            colors: [Colors.grey.shade100, Colors.grey.shade50],
+            begin: Alignment.topCenter,
+            end: Alignment.bottomCenter,
           ),
+        ),
         child: Column(
           children: [
             Expanded(
               child: StreamBuilder<QuerySnapshot>(
-                stream: messagesRef.snapshots(),
+                stream: messagesQuery.snapshots(),
                 builder: (context, snapshot) {
                   if (!snapshot.hasData) return const Center(child: CircularProgressIndicator());
-
-                  final messages = snapshot.data!.docs;
-
+                  final docs = snapshot.data!.docs;
                   return ListView.builder(
-                    itemCount: messages.length,
+                    padding: const EdgeInsets.all(12),
+                    itemCount: docs.length,
                     itemBuilder: (context, index) {
-                      final msg = messages[index].data() as Map<String, dynamic>;
-                      final isMe = msg["senderId"] == currentUserId;
+                      final doc = docs[index];
+                      final msg = doc.data()! as Map<String, dynamic>;
+                      final isMe = msg['senderId'] == currentUserId;
+
+                      // mark seen when receiver opens (only for messages that are for current user)
+                      if (!isMe && (msg['seen'] == null || msg['seen'] == false)) {
+                        try {
+                          doc.reference.update({'seen': true});
+                        } catch (_) {}
+                      }
+
                       return ChatBubble(message: msg, isMe: isMe);
                     },
                   );
                 },
               ),
             ),
-            ChatInput(chatId: chatId, currentUserId: currentUserId),
+            ChatInput(chatId: chatId, currentUserId: currentUserId, receiverId: receiverId),
           ],
         ),
       ),
