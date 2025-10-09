@@ -163,13 +163,26 @@ class _ChatInputState extends State<ChatInput> {
       _isRecording = false;
     });
   }
-
   Future<void> _sendText() async {
     final text = _textController.text.trim();
     if (text.isEmpty) return;
-    await _sendMessageToFirestore(text, 'text');
+
     _textController.clear();
+
+    await FirebaseFirestore.instance
+        .collection('chats')
+        .doc(widget.chatId)
+        .collection('messages')
+        .add({
+      'text': text,
+      'senderId': widget.currentUserId,
+      'receiverId': widget.receiverId,
+      'timestamp': FieldValue.serverTimestamp(),
+      'seen': false,
+      'type': 'text', // এইটা খুব গুরুত্বপূর্ণ
+    });
   }
+
 
   Future<void> _sendMessageToFirestore(String content, String type) async {
     final messagesRef = FirebaseFirestore.instance.collection('chats').doc(widget.chatId).collection('messages');
@@ -291,61 +304,120 @@ class _ChatInputState extends State<ChatInput> {
   }
 
   @override
-  Widget build(BuildContext context) {
-    return Column(
-      children: [
-        // preview area (image / file / audio)
-        Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-          child: _buildSelectedPreview(),
-        ),
+Widget build(BuildContext context) {
+  return Column(
+    children: [
+      // 🔹 Preview area (image / file / audio)
+      Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+        child: _buildSelectedPreview(),
+      ),
 
-        // input row
-        Container(
-          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
-          decoration: BoxDecoration(
-            color: Colors.white,
-            boxShadow: [BoxShadow(color: Colors.black12.withOpacity(0.03), blurRadius: 4)],
+      // 🔹 Colourful input area
+      Container(
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+        decoration: const BoxDecoration(
+          gradient: LinearGradient(
+            colors: [
+              Color(0xFFB2EBF2), // soft cyan
+              Color(0xFFB3E5FC), // light blue
+            ],
+            begin: Alignment.centerLeft,
+            end: Alignment.centerRight,
           ),
-          child: Row(
-            children: [
-              IconButton(icon: const Icon(Icons.image, color: Colors.blueAccent), onPressed: _pickImage),
-              IconButton(icon: const Icon(Icons.attach_file, color: Colors.green), onPressed: _pickDocument),
-              // recording control
-              IconButton(
-                icon: Icon(_isRecording ? Icons.stop_circle : Icons.mic, color: Colors.redAccent),
-                onPressed: () async {
-                  if (_isRecording) {
-                    await _stopRecording();
-                  } else {
-                    await _startRecordingIfPossible();
-                  }
-                },
+          borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black12,
+              blurRadius: 6,
+              offset: Offset(0, -3),
+            ),
+          ],
+        ),
+        child: Row(
+          children: [
+            // 📸 Image picker
+            IconButton(
+              icon: const Icon(Icons.image, color: Colors.deepPurpleAccent, size: 28),
+              onPressed: _pickImage,
+            ),
+
+            // 📎 File picker
+            IconButton(
+              icon: const Icon(Icons.attach_file, color: Colors.orangeAccent, size: 26),
+              onPressed: _pickDocument,
+            ),
+
+            // 🎙️ Audio recorder
+            IconButton(
+              icon: Icon(
+                _isRecording ? Icons.stop_circle : Icons.mic,
+                color: _isRecording ? Colors.red : Colors.redAccent,
+                size: 27,
               ),
-              Expanded(
+              onPressed: () async {
+                if (_isRecording) {
+                  await _stopRecording();
+                } else {
+                  await _startRecordingIfPossible();
+                }
+              },
+            ),
+
+            // ✏️ Message text field
+            Expanded(
+              child: Container(
+                margin: const EdgeInsets.symmetric(horizontal: 6),
+                padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(20),
+                ),
                 child: TextField(
                   controller: _textController,
-                  decoration: const InputDecoration(hintText: 'Type a message...', border: InputBorder.none),
+                  decoration: const InputDecoration(
+                    hintText: "Type a message...",
+                    border: InputBorder.none,
+                  ),
                 ),
               ),
-              _busy ? const SizedBox(width: 36, height: 36, child: CircularProgressIndicator(strokeWidth: 2)) :
-              IconButton(icon: const Icon(Icons.send, color: Colors.blueAccent), onPressed: () {
-                if ((_selectedImage != null) || (_selectedFile != null) || (_audioPath != null)) {
-                  // if a file is selected/recorded we prefer sending that
-                  if (_selectedImage != null) _sendSelectedImage();
-                  else if (_selectedFile != null) _sendSelectedFile();
-                  else if (_audioPath != null) _sendAudio();
-                } else {
-                  final t = _textController.text.trim();
-                  if (t.isNotEmpty) _sendText();
-                }
-              }),
-            ],
-          ),
+            ),
+
+            // 🚀 Send button or loader
+            _busy
+                ? const SizedBox(
+                    width: 36,
+                    height: 36,
+                    child: CircularProgressIndicator(
+                      strokeWidth: 2,
+                      color: Colors.white,
+                    ),
+                  )
+                : CircleAvatar(
+                    radius: 22,
+                    backgroundColor: Colors.deepPurpleAccent,
+                    child: IconButton(
+                      icon: const Icon(Icons.send, color: Colors.white, size: 20),
+                      onPressed: () {
+                        if ((_selectedImage != null) ||
+                            (_selectedFile != null) ||
+                            (_audioPath != null)) {
+                          if (_selectedImage != null) _sendSelectedImage();
+                          else if (_selectedFile != null) _sendSelectedFile();
+                          else if (_audioPath != null) _sendAudio();
+                        } else {
+                          final t = _textController.text.trim();
+                          if (t.isNotEmpty) _sendText();
+                        }
+                      },
+                    ),
+                  ),
+          ],
         ),
-      ],
-    );
-  }
+      ),
+    ],
+  );
+}
 
   Future<void> _startRecordingIfPossible() async {
     if (!_recorderInited) await _initRecorder();

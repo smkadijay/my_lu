@@ -4,7 +4,10 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:my_lu/home_page.dart';
 import 'login_page.dart';
 
+
 class RegistrationPage extends StatefulWidget {
+  const RegistrationPage({super.key});
+
   @override
   State<RegistrationPage> createState() => _RegistrationPageState();
 }
@@ -20,7 +23,7 @@ class _RegistrationPageState extends State<RegistrationPage> {
 
   bool _isLoading = false;
 
-  void registerUser() async {
+  void registerUser(dynamic nameController, dynamic emailController, dynamic uid) async {
     if (!_formKey.currentState!.validate()) return; // form validation
 
     setState(() { _isLoading = true; });
@@ -34,12 +37,17 @@ class _RegistrationPageState extends State<RegistrationPage> {
       final user = userCredential.user;
 
       // Firestore e user document add
-      await FirebaseFirestore.instance.collection('users').doc(user!.uid).set({
-        'name': _nameController.text.trim(),
-        'email': user.email,
-        'uid': user.uid,
-        'avatar': 'https://i.pravatar.cc/150?u=${user.uid}', // unique avatar
+      await FirebaseFirestore.instance.collection('users').doc(uid).set({
+        'uid': uid,
+        'name': nameController.text.trim(),
+        'email': emailController.text.trim(),
+        'department': '',
+        'designation': '',
+        'bio': '',
+        'avatar': '',
+        'createdAt': FieldValue.serverTimestamp(),
       });
+
 
       // Navigate to home page
       Navigator.pushReplacement(
@@ -145,7 +153,9 @@ class _RegistrationPageState extends State<RegistrationPage> {
                     _isLoading
                         ? CircularProgressIndicator()
                         : ElevatedButton(
-                            onPressed: registerUser,
+                            onPressed: () {
+                              registerUser(_nameController, _emailController, _auth.currentUser?.uid ?? '');
+                            },
                             child: Text("Register"),
                           ),
                     SizedBox(height: 10),

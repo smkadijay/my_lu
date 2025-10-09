@@ -2,12 +2,14 @@ import 'package:flutter/material.dart';
 import 'package:my_lu/chat_app/chat_page.dart' hide getChatId;
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:my_lu/chat_app/user_list.dart';
+import 'package:my_lu/items/notice_list_page.dart';
 import 'package:my_lu/result_app/result_page.dart';
-import 'package:my_lu/notice_page.dart';
+import 'package:my_lu/items/notice_list_page.dart';
 import 'package:my_lu/items/bus_schedule_page.dart';
 import 'package:my_lu/campus_map/map_selection_page.dart';
 import 'package:my_lu/lu_info/lu_info_page.dart';
 import 'package:my_lu/chat_app/user_list.dart';
+import 'package:my_lu/profile_page.dart';
 
 class RoutinePage extends StatelessWidget {
   const RoutinePage({super.key});
@@ -18,8 +20,23 @@ class RoutinePage extends StatelessWidget {
 }
 
 Widget _buildDummyPage(BuildContext context, String title) {
-  return Scaffold(
-    appBar: AppBar(backgroundColor: Colors.deepPurple, title: Text(title)),
+return Scaffold(
+  appBar: AppBar(
+    backgroundColor: Colors.deepPurple,
+    title: Text(title),
+    actions: [
+      IconButton(
+        icon: const Icon(Icons.person, color: Colors.white),
+        onPressed: () {
+          Navigator.push(
+            context,
+            MaterialPageRoute(builder: (_) => const ProfilePage()),
+          );
+        },
+      ),
+    ],
+  ),
+
     body: Center(
       child: Text(
         title,
@@ -179,7 +196,7 @@ class HomePage extends StatelessWidget {
                         Navigator.push(
                           context,
                           MaterialPageRoute(
-                            builder: (_) => const NoticePage(),
+                            builder: (_) => const NoticeListPage(),
                           ),
                         );
                       },
