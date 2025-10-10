@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:my_lu/home_page.dart';
-import 'login_page.dart';
+import 'auth/login_selection_page.dart';
 
 
 class RegistrationPage extends StatefulWidget {
@@ -23,46 +23,52 @@ class _RegistrationPageState extends State<RegistrationPage> {
 
   bool _isLoading = false;
 
-  void registerUser(dynamic nameController, dynamic emailController, dynamic uid) async {
-    if (!_formKey.currentState!.validate()) return; // form validation
+// replace previous registerUser(...) with this
+Future<void> registerUser(TextEditingController nameController, TextEditingController emailController, String currentUserId) async {
+  if (!_formKey.currentState!.validate()) return;
 
-    setState(() { _isLoading = true; });
+  setState(() { _isLoading = true; });
 
-    try {
-      final userCredential = await _auth.createUserWithEmailAndPassword(
-        email: _emailController.text.trim(),
-        password: _passwordController.text.trim(),
-      );
+  try {
+    final userCredential = await _auth.createUserWithEmailAndPassword(
+      email: _emailController.text.trim(),
+      password: _passwordController.text.trim(),
+    );
 
-      final user = userCredential.user;
+    final user = userCredential.user;
+    if (user == null) throw Exception('User creation failed');
 
-      // Firestore e user document add
-      await FirebaseFirestore.instance.collection('users').doc(uid).set({
-        'uid': uid,
-        'name': nameController.text.trim(),
-        'email': emailController.text.trim(),
-        'department': '',
-        'designation': '',
-        'bio': '',
-        'avatar': '',
-        'createdAt': FieldValue.serverTimestamp(),
-      });
+    // Firestore e user document add (use the real uid)
+    await FirebaseFirestore.instance.collection('users').doc(user.uid).set({
+      'uid': user.uid,
+      'name': nameController.text.trim(),
+      'email': emailController.text.trim(),
+      'department': '',
+      'designation': '',
+      'bio': '',
+      'avatar': '',
+      'searchable': false, // default: not searchable (privacy first)
+      'createdAt': FieldValue.serverTimestamp(),
+    });
 
-
-      // Navigate to home page
-      Navigator.pushReplacement(
-        context,
-        MaterialPageRoute(builder: (_) => HomePage()),
-      );
-
-    } on FirebaseAuthException catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(e.message ?? "Registration failed")),
-      );
-    } finally {
-      setState(() { _isLoading = false; });
-    }
+    // Navigate to home page
+    Navigator.pushReplacement(
+      context,
+      MaterialPageRoute(builder: (_) => HomePage()),
+    );
+  } on FirebaseAuthException catch (e) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text(e.message ?? "Registration failed")),
+    );
+  } catch (e) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text("Error: $e")),
+    );
+  } finally {
+    setState(() { _isLoading = false; });
   }
+}
+
 
   @override
   Widget build(BuildContext context) {
@@ -161,7 +167,7 @@ class _RegistrationPageState extends State<RegistrationPage> {
                     SizedBox(height: 10),
                     TextButton(
                       onPressed: () {
-                        Navigator.push(context, MaterialPageRoute(builder: (_) => LoginPage()));
+                        Navigator.push(context, MaterialPageRoute(builder: (_) => LoginSelectionPage()));
                       },
                       child: Text("Already have an account? Login", style: TextStyle(color: Colors.white)),
                     )

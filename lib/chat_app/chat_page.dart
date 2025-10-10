@@ -18,7 +18,7 @@ class ChatPage extends StatelessWidget {
     required this.receiverId,
     required this.receiverEmail,
     required this.receiverName,
-    required this.receiverAvatar,
+    required this.receiverAvatar, required chatName, required peerImage,
   });
 
   @override

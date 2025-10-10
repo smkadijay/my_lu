@@ -3,34 +3,39 @@ import 'package:url_launcher/url_launcher.dart';
 import 'package:share_plus/share_plus.dart';
 import 'package:intl/intl.dart';
 
-
 class ChatBubble extends StatelessWidget {
   final Map<String, dynamic> message;
   final bool isMe;
 
-  const ChatBubble({
-    super.key,
-    required this.message,
-    required this.isMe,
-  });
+  const ChatBubble({super.key, required this.message, required this.isMe});
 
-  bool _isImage(String url) {
+  bool _isImage(String? url) {
+    if (url == null) return false;
     return url.endsWith('.jpg') || url.endsWith('.jpeg') || url.endsWith('.png') || url.endsWith('.gif');
   }
 
-  bool _isAudio(String url) {
-    return url.endsWith('.mp3') || url.endsWith('.wav') || url.endsWith('.m4a');
+  bool _isAudio(String? url) {
+    if (url == null) return false;
+    return url.endsWith('.mp3') || url.endsWith('.wav') || url.endsWith('.m4a') || url.endsWith('.aac');
   }
 
-  bool _isFile(String url) {
+  bool _isFile(String? url) {
+    if (url == null) return false;
     return url.endsWith('.pdf') || url.endsWith('.doc') || url.endsWith('.docx') || url.endsWith('.txt') || url.endsWith('.zip');
   }
 
   @override
   Widget build(BuildContext context) {
-    final text = message['text'] ?? '';
-    final fileUrl = message['fileUrl'];
-    final time = message['timestamp']?.toDate().toString().substring(11, 16) ?? '';
+    // Accept both 'text' and legacy 'message' keys
+    final text = (message['text'] ?? message['message'] ?? '') as String;
+    final fileUrl = message['fileUrl'] as String?;
+    String timeStr = '';
+    if (message['timestamp'] != null) {
+      try {
+        final dt = (message['timestamp']).toDate();
+        timeStr = DateFormat('hh:mm a').format(dt);
+      } catch (_) {}
+    }
 
     return Align(
       alignment: isMe ? Alignment.centerRight : Alignment.centerLeft,
@@ -46,10 +51,7 @@ class ChatBubble extends StatelessWidget {
           children: [
             // show message text
             if (text.isNotEmpty)
-              Text(
-                text,
-                style: const TextStyle(fontSize: 15),
-              ),
+              Text(text, style: const TextStyle(fontSize: 15)),
 
             // show image, file or audio preview
             if (fileUrl != null && fileUrl.isNotEmpty) ...[
@@ -79,22 +81,11 @@ class ChatBubble extends StatelessWidget {
                   children: [
                     const Icon(Icons.insert_drive_file, size: 28, color: Colors.black54),
                     const SizedBox(width: 8),
-                    Expanded(
-                      child: Text(
-                        'File: ${fileUrl.split('/').last}',
-                        overflow: TextOverflow.ellipsis,
-                      ),
-                    ),
+                    Expanded(child: Text('File: ${message['fileName'] ?? fileUrl.split('/').last}', overflow: TextOverflow.ellipsis)),
                   ],
                 ),
               if (_isAudio(fileUrl))
-                Row(
-                  children: const [
-                    Icon(Icons.audiotrack, color: Colors.black54),
-                    SizedBox(width: 8),
-                    Text('Audio File'),
-                  ],
-                ),
+                Row(children: const [Icon(Icons.audiotrack, color: Colors.black54), SizedBox(width: 8), Text('Audio File')]),
 
               // download and share buttons
               Row(
@@ -116,17 +107,10 @@ class ChatBubble extends StatelessWidget {
                 ],
               ),
             ],
+
             const SizedBox(height: 4),
-            if (message['timestamp'] != null)
-              Text(
-                DateFormat('hh:mm a').format(
-                  message['timestamp'].toDate(),
-                ),
-                style: const TextStyle(
-                  fontSize: 11,
-                  color: Colors.black54,
-                ),
-              ),
+            if (timeStr.isNotEmpty)
+              Text(timeStr, style: TextStyle(fontSize: 11, color: isMe ? Colors.white70 : Colors.black54)),
           ],
         ),
       ),

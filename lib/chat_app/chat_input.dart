@@ -163,76 +163,94 @@ class _ChatInputState extends State<ChatInput> {
       _isRecording = false;
     });
   }
+
   Future<void> _sendText() async {
     final text = _textController.text.trim();
     if (text.isEmpty) return;
-
+    await _sendMessageToFirestore(text, 'text');
     _textController.clear();
-
-    await FirebaseFirestore.instance
-        .collection('chats')
-        .doc(widget.chatId)
-        .collection('messages')
-        .add({
-      'text': text,
-      'senderId': widget.currentUserId,
-      'receiverId': widget.receiverId,
-      'timestamp': FieldValue.serverTimestamp(),
-      'seen': false,
-      'type': 'text', // এইটা খুব গুরুত্বপূর্ণ
-    });
   }
 
+Future<void> _sendMessageToFirestore(String content, String type) async {
+  final messagesRef = FirebaseFirestore.instance.collection('chats').doc(widget.chatId).collection('messages');
 
-  Future<void> _sendMessageToFirestore(String content, String type) async {
+  // message document shape:
+  final doc = {
+    'senderId': widget.currentUserId,
+    'receiverId': widget.receiverId,
+    'text': content,          // use 'text' key for message body (consistent)
+    'type': type,
+    'timestamp': FieldValue.serverTimestamp(),
+    'seen': false,
+  };
+
+  await messagesRef.add(doc);
+}
+
+Future<void> _sendSelectedImage() async {
+  if (_selectedImage == null) return;
+  final url = await _uploadFileToCloudinary(_selectedImage!, 'image');
+  if (url != null) {
+    await _sendMessageToFirestore(url, 'image'); // BUT we need fileUrl in doc
+    // fix: directly add message with fileUrl
     final messagesRef = FirebaseFirestore.instance.collection('chats').doc(widget.chatId).collection('messages');
     await messagesRef.add({
       'senderId': widget.currentUserId,
       'receiverId': widget.receiverId,
-      'message': content,
-      'type': type,
+      'fileUrl': url,
+      'type': 'image',
       'timestamp': FieldValue.serverTimestamp(),
       'seen': false,
     });
+    setState(() => _selectedImage = null);
+  } else {
+    ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Image upload failed')));
   }
+}
 
-  Future<void> _sendSelectedImage() async {
-    if (_selectedImage == null) return;
-    final url = await _uploadFileToCloudinary(_selectedImage!, 'image');
-    if (url != null) {
-      await _sendMessageToFirestore(url, 'image');
-      setState(() => _selectedImage = null);
-    } else {
-      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Image upload failed')));
-    }
+Future<void> _sendSelectedFile() async {
+  if (_selectedFile == null) return;
+  final url = await _uploadFileToCloudinary(_selectedFile!, 'raw');
+  if (url != null) {
+    final messagesRef = FirebaseFirestore.instance.collection('chats').doc(widget.chatId).collection('messages');
+    await messagesRef.add({
+      'senderId': widget.currentUserId,
+      'receiverId': widget.receiverId,
+      'fileUrl': url,
+      'fileName': _selectedFileName ?? '',
+      'type': 'doc',
+      'timestamp': FieldValue.serverTimestamp(),
+      'seen': false,
+    });
+    setState(() {
+      _selectedFile = null;
+      _selectedFileName = null;
+    });
+  } else {
+    ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('File upload failed')));
   }
+}
 
-  Future<void> _sendSelectedFile() async {
-    if (_selectedFile == null) return;
-    final url = await _uploadFileToCloudinary(_selectedFile!, 'raw');
-    if (url != null) {
-      await _sendMessageToFirestore(url, 'doc');
-      setState(() {
-        _selectedFile = null;
-        _selectedFileName = null;
-      });
-    } else {
-      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('File upload failed')));
-    }
+Future<void> _sendAudio() async {
+  if (_audioPath == null) return;
+  final f = File(_audioPath!);
+  if (!f.existsSync()) return;
+  final url = await _uploadFileToCloudinary(f, 'video'); // keep as video upload for audio
+  if (url != null) {
+    final messagesRef = FirebaseFirestore.instance.collection('chats').doc(widget.chatId).collection('messages');
+    await messagesRef.add({
+      'senderId': widget.currentUserId,
+      'receiverId': widget.receiverId,
+      'fileUrl': url,
+      'type': 'audio',
+      'timestamp': FieldValue.serverTimestamp(),
+      'seen': false,
+    });
+    _deleteRecording();
+  } else {
+    ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Audio upload failed')));
   }
-
-  Future<void> _sendAudio() async {
-    if (_audioPath == null) return;
-    final f = File(_audioPath!);
-    if (!f.existsSync()) return;
-    final url = await _uploadFileToCloudinary(f, 'video'); // audio use video/upload
-    if (url != null) {
-      await _sendMessageToFirestore(url, 'audio');
-      _deleteRecording();
-    } else {
-      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Audio upload failed')));
-    }
-  }
+}
 
   Widget _buildSelectedPreview() {
     if (_selectedImage != null) {
@@ -418,6 +436,7 @@ Widget build(BuildContext context) {
     ],
   );
 }
+
 
   Future<void> _startRecordingIfPossible() async {
     if (!_recorderInited) await _initRecorder();

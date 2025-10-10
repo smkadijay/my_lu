@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:my_lu/login_page.dart';
+import 'package:my_lu/auth/login_selection_page.dart';
 import 'dart:async';
 import 'registration_page.dart';
 

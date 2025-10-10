@@ -14,14 +14,11 @@ class ProfilePage extends StatefulWidget {
 }
 
 class _ProfilePageState extends State<ProfilePage> {
-  final _formKey = GlobalKey<FormState>();
   final _firestore = FirebaseFirestore.instance;
   final _auth = FirebaseAuth.instance;
 
   final nameController = TextEditingController();
   final deptController = TextEditingController();
-  final designationController = TextEditingController();
-  final bioController = TextEditingController();
 
   String? imageUrl;
   bool isLoading = false;
@@ -42,8 +39,6 @@ class _ProfilePageState extends State<ProfilePage> {
       setState(() {
         nameController.text = data['name'] ?? '';
         deptController.text = data['department'] ?? '';
-        designationController.text = data['designation'] ?? '';
-        bioController.text = data['bio'] ?? '';
         imageUrl = data['avatar'];
       });
     }
@@ -56,7 +51,8 @@ class _ProfilePageState extends State<ProfilePage> {
 
     setState(() => isLoading = true);
 
-    final uploadUrl = Uri.parse("https://api.cloudinary.com/v1_1/daaz6phgh/image/upload");
+    final uploadUrl =
+        Uri.parse("https://api.cloudinary.com/v1_1/daaz6phgh/image/upload");
     final uploadPreset = "unsigned_upload";
 
     var request = http.MultipartRequest("POST", uploadUrl)
@@ -77,17 +73,20 @@ class _ProfilePageState extends State<ProfilePage> {
   }
 
   Future<void> _saveProfile() async {
-    if (!_formKey.currentState!.validate()) return;
     final user = _auth.currentUser;
     if (user == null) return;
+
+    if (nameController.text.trim().isEmpty) {
+      ScaffoldMessenger.of(context)
+          .showSnackBar(const SnackBar(content: Text("Enter your name")));
+      return;
+    }
 
     setState(() => isLoading = true);
 
     await _firestore.collection('users').doc(user.uid).update({
       'name': nameController.text.trim(),
       'department': deptController.text.trim(),
-      'designation': designationController.text.trim(),
-      'bio': bioController.text.trim(),
       'avatar': imageUrl ?? '',
       'updatedAt': FieldValue.serverTimestamp(),
     });
@@ -100,7 +99,7 @@ class _ProfilePageState extends State<ProfilePage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.grey[100],
+      backgroundColor: const Color(0xfff3f0ff),
       appBar: AppBar(
         title: const Text("My Profile"),
         centerTitle: true,
@@ -109,57 +108,61 @@ class _ProfilePageState extends State<ProfilePage> {
       body: isLoading
           ? const Center(child: CircularProgressIndicator())
           : SingleChildScrollView(
-              padding: const EdgeInsets.all(20),
-              child: Form(
-                key: _formKey,
-                child: Column(
-                  children: [
-                    GestureDetector(
-                      onTap: _pickAndUploadImage,
-                      child: CircleAvatar(
-                        radius: 55,
-                        backgroundColor: Colors.purple[100],
-                        backgroundImage:
-                            imageUrl != null ? NetworkImage(imageUrl!) : null,
-                        child: imageUrl == null
-                            ? const Icon(Icons.camera_alt, size: 40, color: Colors.white70)
-                            : null,
-                      ),
+              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 30),
+              child: Column(
+                children: [
+                  GestureDetector(
+                    onTap: _pickAndUploadImage,
+                    child: CircleAvatar(
+                      radius: 60,
+                      backgroundColor: Colors.deepPurple[100],
+                      backgroundImage:
+                          imageUrl != null ? NetworkImage(imageUrl!) : null,
+                      child: imageUrl == null
+                          ? const Icon(Icons.camera_alt,
+                              size: 40, color: Colors.white70)
+                          : null,
                     ),
-                    const SizedBox(height: 20),
-                    TextFormField(
-                      controller: nameController,
-                      decoration: const InputDecoration(labelText: "Full Name"),
-                      validator: (v) => v!.isEmpty ? "Enter your name" : null,
+                  ),
+                  const SizedBox(height: 20),
+                  // Name
+                  TextField(
+                    controller: nameController,
+                    textAlign: TextAlign.center,
+                    style: const TextStyle(
+                        fontSize: 22,
+                        fontWeight: FontWeight.bold,
+                        color: Colors.deepPurple),
+                    decoration: const InputDecoration(
+                        border: InputBorder.none,
+                        hintText: 'Full Name',
+                        hintStyle: TextStyle(color: Colors.grey)),
+                  ),
+                  const SizedBox(height: 5),
+                  // Department / Works at
+                  TextField(
+                    controller: deptController,
+                    textAlign: TextAlign.center,
+                    style: const TextStyle(fontSize: 16, color: Colors.black54),
+                    decoration: const InputDecoration(
+                        border: InputBorder.none,
+                        hintText: 'Department / Works at',
+                        hintStyle: TextStyle(color: Colors.grey)),
+                  ),
+                  const SizedBox(height: 30),
+                  ElevatedButton(
+                    onPressed: _saveProfile,
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: Colors.deepPurpleAccent,
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 50, vertical: 15),
+                      shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12)),
                     ),
-                    TextFormField(
-                      controller: deptController,
-                      decoration: const InputDecoration(labelText: "Department"),
-                    ),
-                    TextFormField(
-                      controller: designationController,
-                      decoration: const InputDecoration(labelText: "Designation"),
-                    ),
-                    TextFormField(
-                      controller: bioController,
-                      maxLines: 2,
-                      decoration: const InputDecoration(labelText: "Bio"),
-                    ),
-                    const SizedBox(height: 25),
-                    ElevatedButton(
-                      onPressed: _saveProfile,
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: Colors.deepPurpleAccent,
-                        padding: const EdgeInsets.symmetric(
-                            horizontal: 40, vertical: 15),
-                        shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(12)),
-                      ),
-                      child: const Text("Save Profile",
-                          style: TextStyle(fontSize: 16, color: Colors.white)),
-                    ),
-                  ],
-                ),
+                    child: const Text("Save Profile",
+                        style: TextStyle(fontSize: 16, color: Colors.white)),
+                  ),
+                ],
               ),
             ),
     );

@@ -4,11 +4,9 @@
 
 /// Generates a unique chat ID for private chats between two users.
 /// Always arranges the IDs alphabetically so both sides get the same ID.
-String getChatId(String user1, String user2) {
-  if (user1.compareTo(user2) < 0) {
-    return "${user1}_$user2";
-  } else {
-    return "${user2}_$user1";
-  }
+
+String getChatId(String uid1, String uid2) {
+  final sorted = [uid1, uid2]..sort();
+  return '${sorted[0]}_${sorted[1]}';
 }
 
