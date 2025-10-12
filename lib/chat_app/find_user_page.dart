@@ -91,7 +91,6 @@ class _FindUserPageState extends State<FindUserPage> {
                         'lastMessage': '',
                         'lastTime': FieldValue.serverTimestamp(),
                       }, SetOptions(merge: true));
-
                       Navigator.push(
                         context,
                         MaterialPageRoute(
@@ -101,7 +100,7 @@ class _FindUserPageState extends State<FindUserPage> {
                             receiverId: receiverId,
                             receiverEmail: _foundUser!['email'],
                             receiverName: _foundUser!['name'],
-                            receiverAvatar: _foundUser!['avatar'], chatName: null, peerImage: null,
+                            receiverAvatar: _foundUser!['avatar'], chatName: '', peerImage: '',
                           ),
                         ),
                       );
