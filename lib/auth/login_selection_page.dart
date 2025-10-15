@@ -40,7 +40,7 @@ class LoginSelectionPage extends StatelessWidget {
               ),
               const SizedBox(height: 40),
 
-              // 🟢 Student / Teacher Login
+              
               _buildLoginButton(
                 context,
                 title: "Student / Teacher Login",
@@ -56,7 +56,7 @@ class LoginSelectionPage extends StatelessWidget {
               ),
               const SizedBox(height: 20),
 
-              // 🔴 Admin Login
+     
               _buildLoginButton(
                 context,
                 title: "Admin Login",

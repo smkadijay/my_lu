@@ -49,7 +49,7 @@ class MessageRequestPage extends StatelessWidget {
                       IconButton(
                         icon: const Icon(Icons.check, color: Colors.green),
                         onPressed: () async {
-                          // Accept the request → make chat active
+                         
                           await chat.reference.update({'status': 'active'});
                           ScaffoldMessenger.of(context).showSnackBar(
                             const SnackBar(content: Text("Request accepted.")),
@@ -59,7 +59,7 @@ class MessageRequestPage extends StatelessWidget {
                       IconButton(
                         icon: const Icon(Icons.close, color: Colors.red),
                         onPressed: () async {
-                          // Reject → delete chat
+                          
                           await chat.reference.delete();
                           ScaffoldMessenger.of(context).showSnackBar(
                             const SnackBar(content: Text("Request ignored.")),

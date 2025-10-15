@@ -9,7 +9,7 @@ class FacultyInfoPage extends StatefulWidget {
 }
 
 class _FacultyInfoPageState extends State<FacultyInfoPage> {
-  String? selectedDepartment; // To check which department is opened
+  String? selectedDepartment; 
 
   @override
   Widget build(BuildContext context) {
@@ -37,7 +37,6 @@ class _FacultyInfoPageState extends State<FacultyInfoPage> {
     );
   }
 
-  // 🔹 Step 1: Show all departments
   Widget _buildDepartmentList() {
     return StreamBuilder<QuerySnapshot>(
       stream: FirebaseFirestore.instance.collection('faculty').snapshots(),
@@ -84,7 +83,6 @@ class _FacultyInfoPageState extends State<FacultyInfoPage> {
     );
   }
 
-  // 🔹 Step 2: Show faculty list of selected department
   Widget _buildFacultyList(String department) {
     return StreamBuilder<QuerySnapshot>(
       stream: FirebaseFirestore.instance

@@ -29,8 +29,8 @@ class _AdminAddEditPageState extends State<AdminAddEditPage> {
   File? _selectedImage;
   bool _loading = false;
 
-  final cloudName = "daaz6phgh"; // তোমার Cloudinary cloud name
-  final uploadPreset = "unsigned_upload"; // তোমার upload preset name
+  final cloudName = "daaz6phgh"; 
+  final uploadPreset = "unsigned_upload"; 
 
   @override
   void initState() {

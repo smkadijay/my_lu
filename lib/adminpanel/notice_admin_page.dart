@@ -20,7 +20,6 @@ class NoticeAdminPage extends StatelessWidget {
         centerTitle: true,
       ),
 
-      // Floating add button
       floatingActionButton: FloatingActionButton.extended(
         backgroundColor: Colors.deepPurple,
         icon: const Icon(Icons.add),
@@ -76,7 +75,7 @@ class NoticeAdminPage extends StatelessWidget {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
-                    // Image section
+                   
                     ClipRRect(
                       borderRadius:
                           const BorderRadius.vertical(top: Radius.circular(16)),
@@ -94,7 +93,7 @@ class NoticeAdminPage extends StatelessWidget {
                             ),
                     ),
 
-                    // Info section
+               
                     Padding(
                       padding: const EdgeInsets.all(10),
                       child: Column(

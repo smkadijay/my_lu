@@ -103,7 +103,7 @@ class ChatPage extends StatelessWidget {
                 ),
               ),
               // 🔹 Chat input
-              ChatInput(chatId: chatId, currentUserId: currentUserId, receiverId: receiverId),
+              ChatInput(chatId: chatId, currentUserId: currentUserId, receiverId: receiverId,),
             ],
           ),
         ],

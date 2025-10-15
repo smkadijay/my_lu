@@ -2,14 +2,15 @@ import 'dart:io';
 import 'dart:async';
 import 'dart:convert';
 import 'package:flutter/material.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:http/http.dart' as http;
-import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter_sound/flutter_sound.dart';
 import 'package:permission_handler/permission_handler.dart';
 import 'package:path/path.dart' as p;
 import 'package:url_launcher/url_launcher.dart';
+import 'package:intl/intl.dart';
 
 class ChatInput extends StatefulWidget {
   final String chatId;
@@ -28,423 +29,446 @@ class ChatInput extends StatefulWidget {
 }
 
 class _ChatInputState extends State<ChatInput> {
-  final TextEditingController _textController = TextEditingController();
+  final TextEditingController _text = TextEditingController();
   final ImagePicker _picker = ImagePicker();
+  final ScrollController _scroll = ScrollController();
+  bool _busy = false;
 
-  // Selection holders
-  File? _selectedImage;
-  File? _selectedFile; // doc or other
-  String? _selectedFileName;
+  File? _img;
+  File? _file;
+  String? _fileName;
 
-  // Recording
   final FlutterSoundRecorder _recorder = FlutterSoundRecorder();
-  bool _recorderInited = false;
+  bool _recInited = false;
   bool _isRecording = false;
   String? _audioPath;
   Timer? _recTimer;
-  int _recSeconds = 0;
+  int _recSec = 0;
 
-  bool _busy = false; // while uploading
-
-  final String cloudName = 'daaz6phgh'; // your cloud name
-  final String preset = 'unsigned_upload'; // your unsigned preset
+  final String cloudName = 'daaz6phgh';
+  final String preset = 'unsigned_upload';
+  Timer? _typingTimer;
 
   @override
   void initState() {
     super.initState();
     _initRecorder();
+    _markSeen();
   }
 
   Future<void> _initRecorder() async {
     await Permission.microphone.request();
     await Permission.storage.request();
     await _recorder.openRecorder();
-    _recorderInited = true;
+    _recInited = true;
   }
 
   @override
   void dispose() {
-    _recTimer?.cancel();
     _recorder.closeRecorder();
+    _recTimer?.cancel();
+    _typingTimer?.cancel();
     super.dispose();
   }
 
-  Future<String?> _uploadFileToCloudinary(File file, String type) async {
+  // Cloudinary upload
+  Future<String?> _upload(File f, String type) async {
     setState(() => _busy = true);
     try {
-      final endpoint = type == 'image'
+      final url = type == 'image'
           ? 'https://api.cloudinary.com/v1_1/$cloudName/image/upload'
-          : (type == 'raw' ? 'https://api.cloudinary.com/v1_1/$cloudName/raw/upload' : 'https://api.cloudinary.com/v1_1/$cloudName/video/upload');
-
-      final uri = Uri.parse(endpoint);
-      final req = http.MultipartRequest('POST', uri);
+          : 'https://api.cloudinary.com/v1_1/$cloudName/raw/upload';
+      final req = http.MultipartRequest('POST', Uri.parse(url));
       req.fields['upload_preset'] = preset;
-      req.files.add(await http.MultipartFile.fromPath('file', file.path, filename: p.basename(file.path)));
-
+      req.files.add(await http.MultipartFile.fromPath('file', f.path, filename: p.basename(f.path)));
       final res = await req.send();
       final body = await res.stream.bytesToString();
-      if (res.statusCode == 200) {
-        final json = jsonDecode(body);
-        return json['secure_url'] as String?;
-      } else {
-        debugPrint('Cloudinary upload failed ${res.statusCode} $body');
-        return null;
-      }
+      if (res.statusCode == 200) return jsonDecode(body)['secure_url'];
     } catch (e) {
       debugPrint('upload error: $e');
-      return null;
     } finally {
       setState(() => _busy = false);
     }
+    return null;
   }
 
-  Future<void> _pickImage() async {
-    final XFile? picked = await _picker.pickImage(source: ImageSource.gallery, imageQuality: 75);
-    if (picked == null) return;
-    setState(() {
-      _selectedImage = File(picked.path);
-      _selectedFile = null;
-      _selectedFileName = null;
-    });
-  }
-
-  Future<void> _pickDocument() async {
-    final res = await FilePicker.platform.pickFiles(type: FileType.any);
-    if (res == null || res.files.isEmpty) return;
-    final path = res.files.single.path;
-    if (path == null) return;
-    setState(() {
-      _selectedFile = File(path);
-      _selectedFileName = res.files.single.name;
-      _selectedImage = null;
-    });
-  }
-
-  // recording handlers
-  void _startRecording() async {
-    if (!_recorderInited) return;
-    final permission = await Permission.microphone.request();
-    if (!permission.isGranted) return;
-    final fileName = 'voice_${DateTime.now().millisecondsSinceEpoch}.aac';
-    final tempPath = '/${fileName}';
-    // use app temp directory
-    final dir = Directory.systemTemp;
-    _audioPath = '${dir.path}/$fileName';
-    await _recorder.startRecorder(toFile: _audioPath, codec: Codec.aacADTS);
-    setState(() {
-      _isRecording = true;
-      _recSeconds = 0;
-    });
-    _recTimer = Timer.periodic(const Duration(seconds: 1), (_) {
-      setState(() => _recSeconds++);
-    });
-  }
-
-  Future<void> _stopRecording() async {
-    if (!_isRecording) return;
-    await _recorder.stopRecorder();
-    _recTimer?.cancel();
-    setState(() {
-      _isRecording = false;
-    });
-    // audio file available at _audioPath
-  }
-
-  void _deleteRecording() {
-    if (_audioPath != null) {
-      try {
-        final f = File(_audioPath!);
-        if (f.existsSync()) f.deleteSync();
-      } catch (_) {}
+  Future<void> _markSeen() async {
+    final msgRef = FirebaseFirestore.instance
+        .collection('chats')
+        .doc(widget.chatId)
+        .collection('messages');
+    final unread = await msgRef
+        .where('receiverId', isEqualTo: widget.currentUserId)
+        .where('seen', isEqualTo: false)
+        .get();
+    for (var doc in unread.docs) {
+      doc.reference.update({'seen': true});
     }
-    setState(() {
-      _audioPath = null;
-      _recSeconds = 0;
-      _isRecording = false;
+  }
+
+  Future<void> _sendMessage(Map<String, dynamic> msg) async {
+    final ref = FirebaseFirestore.instance
+        .collection('chats')
+        .doc(widget.chatId)
+        .collection('messages');
+    await ref.add(msg);
+    FirebaseFirestore.instance.collection('chats').doc(widget.chatId).update({
+      'lastMessage': msg['type'] == 'text'
+          ? msg['text']
+          : msg['type'] == 'image'
+              ? '📷 Photo'
+              : msg['type'] == 'audio'
+                  ? '🎧 Audio'
+                  : '📎 File',
+      'lastMessageTime': FieldValue.serverTimestamp(),
+      'lastSender': widget.currentUserId,
+      'unreadCounts.${widget.receiverId}': FieldValue.increment(1),
     });
   }
 
   Future<void> _sendText() async {
-    final text = _textController.text.trim();
+    final text = _text.text.trim();
     if (text.isEmpty) return;
-    await _sendMessageToFirestore(text, 'text');
-    _textController.clear();
-  }
-
-Future<void> _sendMessageToFirestore(String content, String type) async {
-  final messagesRef = FirebaseFirestore.instance.collection('chats').doc(widget.chatId).collection('messages');
-
-  // message document shape:
-  final doc = {
-    'senderId': widget.currentUserId,
-    'receiverId': widget.receiverId,
-    'text': content,          // use 'text' key for message body (consistent)
-    'type': type,
-    'timestamp': FieldValue.serverTimestamp(),
-    'seen': false,
-  };
-
-  await messagesRef.add(doc);
-}
-
-Future<void> _sendSelectedImage() async {
-  if (_selectedImage == null) return;
-  final url = await _uploadFileToCloudinary(_selectedImage!, 'image');
-  if (url != null) {
-    await _sendMessageToFirestore(url, 'image'); // BUT we need fileUrl in doc
-    // fix: directly add message with fileUrl
-    final messagesRef = FirebaseFirestore.instance.collection('chats').doc(widget.chatId).collection('messages');
-    await messagesRef.add({
+    await _sendMessage({
       'senderId': widget.currentUserId,
       'receiverId': widget.receiverId,
-      'fileUrl': url,
-      'type': 'image',
+      'text': text,
+      'type': 'text',
       'timestamp': FieldValue.serverTimestamp(),
       'seen': false,
     });
-    setState(() => _selectedImage = null);
-  } else {
-    ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Image upload failed')));
+    _text.clear();
   }
-}
 
-Future<void> _sendSelectedFile() async {
-  if (_selectedFile == null) return;
-  final url = await _uploadFileToCloudinary(_selectedFile!, 'raw');
-  if (url != null) {
-    final messagesRef = FirebaseFirestore.instance.collection('chats').doc(widget.chatId).collection('messages');
-    await messagesRef.add({
-      'senderId': widget.currentUserId,
-      'receiverId': widget.receiverId,
-      'fileUrl': url,
-      'fileName': _selectedFileName ?? '',
-      'type': 'doc',
-      'timestamp': FieldValue.serverTimestamp(),
-      'seen': false,
-    });
+  Future<void> _sendImage() async {
+    if (_img == null) return;
+    final url = await _upload(_img!, 'image');
+    if (url != null) {
+      await _sendMessage({
+        'senderId': widget.currentUserId,
+        'receiverId': widget.receiverId,
+        'fileUrl': url,
+        'type': 'image',
+        'timestamp': FieldValue.serverTimestamp(),
+        'seen': false,
+      });
+    }
+    setState(() => _img = null);
+  }
+
+  Future<void> _sendFile() async {
+    if (_file == null) return;
+    final url = await _upload(_file!, 'raw');
+    if (url != null) {
+      await _sendMessage({
+        'senderId': widget.currentUserId,
+        'receiverId': widget.receiverId,
+        'fileUrl': url,
+        'fileName': _fileName ?? '',
+        'type': 'doc',
+        'timestamp': FieldValue.serverTimestamp(),
+        'seen': false,
+      });
+    }
+    setState(() => _file = null);
+  }
+
+
+  Future<void> _startRec() async {
+    if (!_recInited) await _initRecorder();
+    final perm = await Permission.microphone.request();
+    if (!perm.isGranted) return;
+    final temp = Directory.systemTemp;
+    _audioPath = '${temp.path}/voice_${DateTime.now().millisecondsSinceEpoch}.aac';
+    await _recorder.startRecorder(toFile: _audioPath);
     setState(() {
-      _selectedFile = null;
-      _selectedFileName = null;
+      _isRecording = true;
+      _recSec = 0;
     });
-  } else {
-    ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('File upload failed')));
-  }
-}
-
-Future<void> _sendAudio() async {
-  if (_audioPath == null) return;
-  final f = File(_audioPath!);
-  if (!f.existsSync()) return;
-  final url = await _uploadFileToCloudinary(f, 'video'); // keep as video upload for audio
-  if (url != null) {
-    final messagesRef = FirebaseFirestore.instance.collection('chats').doc(widget.chatId).collection('messages');
-    await messagesRef.add({
-      'senderId': widget.currentUserId,
-      'receiverId': widget.receiverId,
-      'fileUrl': url,
-      'type': 'audio',
-      'timestamp': FieldValue.serverTimestamp(),
-      'seen': false,
+    _recTimer = Timer.periodic(const Duration(seconds: 1), (_) {
+      setState(() => _recSec++);
     });
-    _deleteRecording();
-  } else {
-    ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Audio upload failed')));
   }
-}
 
-  Widget _buildSelectedPreview() {
-    if (_selectedImage != null) {
-      return Container(
-        padding: const EdgeInsets.all(8),
-        decoration: BoxDecoration(
-          color: Colors.blueGrey.shade50,
-          borderRadius: BorderRadius.circular(8),
-          border: Border.all(color: Colors.blueAccent.withOpacity(0.15)),
-        ),
-        child: Row(
-          children: [
-            ClipRRect(borderRadius: BorderRadius.circular(8), child: Image.file(_selectedImage!, width: 68, height: 68, fit: BoxFit.cover)),
-            const SizedBox(width: 10),
-            Expanded(child: Text('Image selected', style: const TextStyle(fontWeight: FontWeight.w500))),
-            IconButton(onPressed: () => setState(() => _selectedImage = null), icon: const Icon(Icons.close)),
-            IconButton(onPressed: () async {
-              // open preview
-              if (_selectedImage != null) await launchUrl(Uri.file(_selectedImage!.path));
-            }, icon: const Icon(Icons.open_in_full)),
-            ElevatedButton(onPressed: _busy ? null : _sendSelectedImage, child: const Text('Send'))
-          ],
-        ),
-      );
-    } else if (_selectedFile != null) {
-      return Container(
-        padding: const EdgeInsets.all(8),
-        decoration: BoxDecoration(
-          color: Colors.green.shade50,
-          borderRadius: BorderRadius.circular(8),
-          border: Border.all(color: Colors.green.withOpacity(0.15)),
-        ),
-        child: Row(
-          children: [
-            const Icon(Icons.insert_drive_file, size: 36),
-            const SizedBox(width: 10),
-            Expanded(child: Text(_selectedFileName ?? 'Document', style: const TextStyle(fontWeight: FontWeight.w500))),
-            IconButton(onPressed: () => setState(() { _selectedFile = null; _selectedFileName = null; }), icon: const Icon(Icons.close)),
-            IconButton(onPressed: () async {
-              if (_selectedFile != null) await launchUrl(Uri.file(_selectedFile!.path));
-            }, icon: const Icon(Icons.open_in_full)),
-            ElevatedButton(onPressed: _busy ? null : _sendSelectedFile, child: const Text('Send'))
-          ],
-        ),
-      );
-    } else if (_audioPath != null) {
-      final mm = Duration(seconds: _recSeconds);
-      final mmStr = '${mm.inMinutes.remainder(60).toString().padLeft(2,'0')}:${(mm.inSeconds.remainder(60)).toString().padLeft(2,'0')}';
-      return Container(
-        padding: const EdgeInsets.all(8),
-        decoration: BoxDecoration(
-          color: Colors.purple.shade50,
-          borderRadius: BorderRadius.circular(8),
-          border: Border.all(color: Colors.purple.withOpacity(0.15)),
-        ),
-        child: Row(
-          children: [
-            const Icon(Icons.mic, color: Colors.purple),
-            const SizedBox(width: 10),
-            Expanded(child: Text('Recording • $mmStr', style: const TextStyle(fontWeight: FontWeight.w500))),
-            IconButton(onPressed: _deleteRecording, icon: const Icon(Icons.delete)),
-            ElevatedButton(onPressed: _busy ? null : _sendAudio, child: const Text('Send'))
-          ],
-        ),
-      );
-    } else {
-      return const SizedBox.shrink();
+  Future<void> _stopRec() async {
+    await _recorder.stopRecorder();
+    _recTimer?.cancel();
+    setState(() => _isRecording = false);
+  }
+
+  Future<void> _sendAudio() async {
+    if (_audioPath == null) return;
+    final file = File(_audioPath!);
+    final url = await _upload(file, 'raw');
+    if (url != null) {
+      await _sendMessage({
+        'senderId': widget.currentUserId,
+        'receiverId': widget.receiverId,
+        'fileUrl': url,
+        'type': 'audio',
+        'timestamp': FieldValue.serverTimestamp(),
+        'seen': false,
+      });
+    }
+    setState(() {
+      _audioPath = null;
+      _recSec = 0;
+    });
+  }
+
+  void _typing(bool active) {
+    FirebaseFirestore.instance.collection('chats').doc(widget.chatId).set({
+      'typing': {widget.currentUserId: active}
+    }, SetOptions(merge: true));
+
+    _typingTimer?.cancel();
+    if (active) {
+      _typingTimer = Timer(const Duration(seconds: 3), () {
+        FirebaseFirestore.instance.collection('chats').doc(widget.chatId).set({
+          'typing': {widget.currentUserId: false}
+        }, SetOptions(merge: true));
+      });
     }
   }
 
   @override
-Widget build(BuildContext context) {
-  return Column(
-    children: [
-      // 🔹 Preview area (image / file / audio)
-      Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-        child: _buildSelectedPreview(),
-      ),
+  Widget build(BuildContext context) {
+    const topGradient = LinearGradient(
+      colors: [Color(0xFF00B4DB), Color(0xFF0083B0)],
+      begin: Alignment.topLeft,
+      end: Alignment.bottomRight,
+    );
 
-      // 🔹 Colourful input area
-      Container(
-        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-        decoration: const BoxDecoration(
-          gradient: LinearGradient(
-            colors: [
-              Color(0xFFB2EBF2), // soft cyan
-              Color(0xFFB3E5FC), // light blue
-            ],
-            begin: Alignment.centerLeft,
-            end: Alignment.centerRight,
+    return Container(
+      decoration: const BoxDecoration(gradient: topGradient),
+      child: Scaffold(
+        backgroundColor: Colors.transparent,
+        appBar: PreferredSize(
+          preferredSize: const Size.fromHeight(60),
+          child: Container(
+            decoration: const BoxDecoration(
+              gradient: LinearGradient(
+                colors: [Color(0xFF01579B), Color(0xFF0288D1)],
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+              ),
+            ),
+            child: AppBar(
+              backgroundColor: Colors.transparent,
+              elevation: 0,
+              title: StreamBuilder<DocumentSnapshot>(
+                stream: FirebaseFirestore.instance
+                    .collection('users')
+                    .doc(widget.receiverId)
+                    .snapshots(),
+                builder: (context, snapshot) {
+                  if (!snapshot.hasData || !snapshot.data!.exists) {
+                    return const Text('Chat', style: TextStyle(color: Colors.white));
+                  }
+                  final user = snapshot.data!;
+                  final name = user['name'] ?? 'Unknown';
+                  return StreamBuilder<DocumentSnapshot>(
+                    stream: FirebaseFirestore.instance
+                        .collection('chats')
+                        .doc(widget.chatId)
+                        .snapshots(),
+                    builder: (context, snap) {
+                      final typing = (snap.data?['typing'] ?? {}) as Map<String, dynamic>;
+                      final isTyping = typing[widget.receiverId] ?? false;
+                      return Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(name,
+                              style: const TextStyle(
+                                  color: Colors.white, fontWeight: FontWeight.bold)),
+                          Text(isTyping ? 'Typing...' : 'Online',
+                              style: const TextStyle(
+                                  color: Colors.white70, fontSize: 12)),
+                        ],
+                      );
+                    },
+                  );
+                },
+              ),
+            ),
           ),
-          borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black12,
-              blurRadius: 6,
-              offset: Offset(0, -3),
-            ),
-          ],
         ),
-        child: Row(
+        body: Column(
           children: [
-            // 📸 Image picker
-            IconButton(
-              icon: const Icon(Icons.image, color: Colors.deepPurpleAccent, size: 28),
-              onPressed: _pickImage,
-            ),
-
-            // 📎 File picker
-            IconButton(
-              icon: const Icon(Icons.attach_file, color: Colors.orangeAccent, size: 26),
-              onPressed: _pickDocument,
-            ),
-
-            // 🎙️ Audio recorder
-            IconButton(
-              icon: Icon(
-                _isRecording ? Icons.stop_circle : Icons.mic,
-                color: _isRecording ? Colors.red : Colors.redAccent,
-                size: 27,
-              ),
-              onPressed: () async {
-                if (_isRecording) {
-                  await _stopRecording();
-                } else {
-                  await _startRecordingIfPossible();
-                }
-              },
-            ),
-
-            // ✏️ Message text field
+            // Message list
             Expanded(
-              child: Container(
-                margin: const EdgeInsets.symmetric(horizontal: 6),
-                padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
-                decoration: BoxDecoration(
-                  color: Colors.white,
-                  borderRadius: BorderRadius.circular(20),
-                ),
-                child: TextField(
-                  controller: _textController,
-                  decoration: const InputDecoration(
-                    hintText: "Type a message...",
-                    border: InputBorder.none,
-                  ),
-                ),
+              child: StreamBuilder<QuerySnapshot>(
+                stream: FirebaseFirestore.instance
+                    .collection('chats')
+                    .doc(widget.chatId)
+                    .collection('messages')
+                    .orderBy('timestamp')
+                    .snapshots(),
+                builder: (context, snapshot) {
+                  if (!snapshot.hasData) {
+                    return const Center(child: CircularProgressIndicator(color: Colors.white));
+                  }
+                  final msgs = snapshot.data!.docs;
+                  return ListView.builder(
+                    controller: _scroll,
+                    itemCount: msgs.length,
+                    itemBuilder: (context, i) {
+                      final m = msgs[i].data() as Map<String, dynamic>;
+                      final isMe = m['senderId'] == widget.currentUserId;
+                      final seen = m['seen'] == true;
+                      final ts = (m['timestamp'] as Timestamp?)?.toDate();
+                      final time = ts != null
+                          ? DateFormat('hh:mm a').format(ts)
+                          : '';
+                      return Align(
+                        alignment: isMe ? Alignment.centerRight : Alignment.centerLeft,
+                        child: Container(
+                          margin: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                          padding: const EdgeInsets.all(10),
+                          decoration: BoxDecoration(
+                            color: isMe
+                                ? Colors.teal.shade600
+                                : Colors.white.withOpacity(0.9),
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.end,
+                            children: [
+                              if (m['type'] == 'text')
+                                Text(m['text'] ?? '',
+                                    style: TextStyle(
+                                        color: isMe ? Colors.white : Colors.black87)),
+                              if (m['type'] == 'image')
+                                GestureDetector(
+                                  onTap: () => launchUrl(Uri.parse(m['fileUrl'])),
+                                  child: Image.network(m['fileUrl'],
+                                      width: 200, height: 140, fit: BoxFit.cover),
+                                ),
+                              if (m['type'] == 'doc')
+                                Row(
+                                  children: [
+                                    const Icon(Icons.insert_drive_file,
+                                        color: Colors.black54),
+                                    const SizedBox(width: 6),
+                                    Expanded(
+                                        child: Text(m['fileName'] ?? 'File',
+                                            style: const TextStyle(color: Colors.black))),
+                                    IconButton(
+                                        icon: const Icon(Icons.open_in_new),
+                                        onPressed: () => launchUrl(Uri.parse(m['fileUrl']))),
+                                  ],
+                                ),
+                              if (m['type'] == 'audio')
+                                Row(
+                                  children: const [
+                                    Icon(Icons.mic, color: Colors.white),
+                                    SizedBox(width: 6),
+                                    Text("Voice message",
+                                        style: TextStyle(color: Colors.white))
+                                  ],
+                                ),
+                              const SizedBox(height: 4),
+                              Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  Text(time,
+                                      style: TextStyle(
+                                          fontSize: 10,
+                                          color: isMe
+                                              ? Colors.white70
+                                              : Colors.black54)),
+                                  if (isMe)
+                                    Icon(seen ? Icons.done_all : Icons.check,
+                                        size: 14,
+                                        color:
+                                            seen ? Colors.blue : Colors.white70),
+                                ],
+                              )
+                            ],
+                          ),
+                        ),
+                      );
+                    },
+                  );
+                },
               ),
             ),
 
-            // 🚀 Send button or loader
-            _busy
-                ? const SizedBox(
-                    width: 36,
-                    height: 36,
-                    child: CircularProgressIndicator(
-                      strokeWidth: 2,
-                      color: Colors.white,
-                    ),
-                  )
-                : CircleAvatar(
-                    radius: 22,
-                    backgroundColor: Colors.deepPurpleAccent,
-                    child: IconButton(
-                      icon: const Icon(Icons.send, color: Colors.white, size: 20),
-                      onPressed: () {
-                        if ((_selectedImage != null) ||
-                            (_selectedFile != null) ||
-                            (_audioPath != null)) {
-                          if (_selectedImage != null) _sendSelectedImage();
-                          else if (_selectedFile != null) _sendSelectedFile();
-                          else if (_audioPath != null) _sendAudio();
-                        } else {
-                          final t = _textController.text.trim();
-                          if (t.isNotEmpty) _sendText();
+            // Footer (input bar)
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+              decoration: const BoxDecoration(
+                gradient: LinearGradient(
+                  colors: [Color(0xFF81D4FA), Color(0xFF4FC3F7)],
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                ),
+                borderRadius:
+                    BorderRadius.vertical(top: Radius.circular(18)),
+              ),
+              child: Row(
+                children: [
+                  IconButton(
+                      icon: const Icon(Icons.image, color: Colors.deepPurpleAccent),
+                      onPressed: () async {
+                        final x = await _picker.pickImage(
+                            source: ImageSource.gallery, imageQuality: 75);
+                        if (x != null) setState(() => _img = File(x.path));
+                      }),
+                  IconButton(
+                      icon: const Icon(Icons.attach_file,
+                          color: Colors.orangeAccent),
+                      onPressed: () async {
+                        final f = await FilePicker.platform.pickFiles();
+                        if (f != null && f.files.isNotEmpty) {
+                          setState(() {
+                            _file = File(f.files.single.path!);
+                            _fileName = f.files.single.name;
+                          });
                         }
-                      },
+                      }),
+                  IconButton(
+                    icon: Icon(_isRecording ? Icons.stop : Icons.mic,
+                        color: _isRecording ? Colors.red : Colors.redAccent),
+                    onPressed: () async {
+                      if (_isRecording) {
+                        await _stopRec();
+                        await _sendAudio();
+                      } else {
+                        await _startRec();
+                      }
+                    },
+                  ),
+                  Expanded(
+                    child: TextField(
+                      controller: _text,
+                      onChanged: (v) => _typing(v.trim().isNotEmpty),
+                      decoration: const InputDecoration(
+                          hintText: 'Type message...',
+                          border: InputBorder.none,
+                          hintStyle: TextStyle(color: Colors.white)),
+                      style: const TextStyle(color: Colors.white),
                     ),
                   ),
+                  _busy
+                      ? const SizedBox(
+                          width: 24,
+                          height: 24,
+                          child: CircularProgressIndicator(strokeWidth: 2))
+                      : IconButton(
+                          icon:
+                              const Icon(Icons.send, color: Colors.deepPurpleAccent),
+                          onPressed: () async {
+                            if (_img != null) await _sendImage();
+                            else if (_file != null) await _sendFile();
+                            else await _sendText();
+                          }),
+                ],
+              ),
+            ),
           ],
         ),
       ),
-    ],
-  );
-}
-
-
-  Future<void> _startRecordingIfPossible() async {
-    if (!_recorderInited) await _initRecorder();
-    final s = await Permission.microphone.request();
-    if (!s.isGranted) {
-      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Microphone permission required')));
-      return;
-    }
-    _startRecording();
+    );
   }
 }

@@ -72,11 +72,11 @@ class _StudentLoginPageState extends State<StudentLoginPage> {
       body: Stack(
         fit: StackFit.expand,
         children: [
-          // Background image
+        
           Image.asset("assets/uni.jpeg", fit: BoxFit.cover),
           Container(color: Colors.black.withOpacity(0.5)),
 
-          // Login form
+     
           Center(
             child: SingleChildScrollView(
               padding: const EdgeInsets.all(20),
@@ -94,7 +94,7 @@ class _StudentLoginPageState extends State<StudentLoginPage> {
                     ),
                     const SizedBox(height: 40),
 
-                    // Email
+              
                     TextFormField(
                       controller: _emailController,
                       keyboardType: TextInputType.emailAddress,
@@ -114,7 +114,7 @@ class _StudentLoginPageState extends State<StudentLoginPage> {
                     ),
                     const SizedBox(height: 20),
 
-                    // Password
+                
                     TextFormField(
                       controller: _passwordController,
                       obscureText: true,
@@ -133,8 +133,6 @@ class _StudentLoginPageState extends State<StudentLoginPage> {
                       },
                     ),
                     const SizedBox(height: 20),
-
-                    // Login button
                     _isLoading
                         ? const CircularProgressIndicator()
                         : ElevatedButton(
@@ -154,7 +152,7 @@ class _StudentLoginPageState extends State<StudentLoginPage> {
 
                     const SizedBox(height: 10),
 
-                    // Registration link
+                    
                     Row(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [

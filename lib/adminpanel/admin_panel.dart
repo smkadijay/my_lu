@@ -64,7 +64,7 @@ class _AdminPanelPageState extends State<AdminPanelPage> {
               padding: const EdgeInsets.all(16),
               child: Column(
                 children: [
-                  // 🧠 Header
+                  
                   Container(
                     width: double.infinity,
                     padding: const EdgeInsets.all(20),
@@ -97,7 +97,7 @@ class _AdminPanelPageState extends State<AdminPanelPage> {
                   ),
                   const SizedBox(height: 20),
 
-                  // 📊 Summary Cards
+                  
                   GridView.count(
                     crossAxisCount: 2,
                     shrinkWrap: true,
@@ -127,7 +127,7 @@ class _AdminPanelPageState extends State<AdminPanelPage> {
                   ),
                   const SizedBox(height: 15),
 
-                  // 🎨 Colorful Grid Cards (Menu)
+                
                   GridView.count(
                     crossAxisCount: 2,
                     crossAxisSpacing: 14,
@@ -194,7 +194,7 @@ class _AdminPanelPageState extends State<AdminPanelPage> {
     );
   }
 
-  // 📊 Stats Card
+
   Widget _buildStatCard(
       String title, int count, IconData icon, Color color) {
     return Card(
@@ -229,7 +229,6 @@ class _AdminPanelPageState extends State<AdminPanelPage> {
     );
   }
 
-  // 🎨 Menu Card (Colorful Grid)
   Widget _buildMenuCard({
     required String title,
     required Color color,
@@ -277,7 +276,7 @@ class _AdminPanelPageState extends State<AdminPanelPage> {
   }
 }
 
-// ⚙️ Generic Manage Collection Page
+
 class ManageCollectionPage extends StatelessWidget {
   final String collection;
   const ManageCollectionPage({super.key, required this.collection});

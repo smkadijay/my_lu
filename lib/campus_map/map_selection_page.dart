@@ -70,7 +70,7 @@ class MapSelectionPage extends StatelessWidget {
                   ),
                 ),
                 onPressed: () {
-                  // TODO: open offline custom map
+                 
                 },
                 icon: const Icon(Icons.map_outlined),
                 label: const Text("Open Offline Map"),

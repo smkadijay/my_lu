@@ -38,7 +38,6 @@ Future<void> registerUser(TextEditingController nameController, TextEditingContr
     final user = userCredential.user;
     if (user == null) throw Exception('User creation failed');
 
-    // Firestore e user document add (use the real uid)
     await FirebaseFirestore.instance.collection('users').doc(user.uid).set({
       'uid': user.uid,
       'name': nameController.text.trim(),
@@ -47,11 +46,11 @@ Future<void> registerUser(TextEditingController nameController, TextEditingContr
       'designation': '',
       'bio': '',
       'avatar': '',
-      'searchable': false, // default: not searchable (privacy first)
+      'searchable': false,
       'createdAt': FieldValue.serverTimestamp(),
     });
 
-    // Navigate to home page
+  
     Navigator.pushReplacement(
       context,
       MaterialPageRoute(builder: (_) => HomePage()),

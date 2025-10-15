@@ -1,8 +1,9 @@
 import 'package:flutter/material.dart';
+import 'package:my_lu/chat_app/chat_list_page.dart';
 import 'package:my_lu/chat_app/chat_page.dart' hide getChatId;
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:my_lu/chat_app/user_list.dart';
+import 'package:my_lu/chat_app/chat_list_page.dart';
 import 'package:my_lu/items/notice_list_page.dart';
 import 'package:my_lu/result_app/result_page.dart';
 import 'package:my_lu/items/bus_schedule_page.dart';
@@ -12,13 +13,13 @@ import 'package:my_lu/profile_page.dart';
 import 'package:my_lu/chat_app/message_request_page.dart';
 import 'package:my_lu/chat_app/privacy_settings_page.dart';
 
-class RoutinePage extends StatelessWidget {
-  const RoutinePage({super.key});
-  @override
-  Widget build(BuildContext context) {
-    return _buildDummyPage(context, "Routine Page");
-  }
-}
+// class RoutinePage extends StatelessWidget {
+//   const RoutinePage({super.key});
+//   @override
+//   Widget build(BuildContext context) {
+//     return _buildDummyPage(context, "Routine Page");
+//   }
+// }
 
 Widget _buildDummyPage(BuildContext context, String title) {
   return Scaffold(
@@ -42,7 +43,7 @@ Widget _buildDummyPage(BuildContext context, String title) {
         return Padding(
           padding: const EdgeInsets.only(right: 12.0),
           child: GestureDetector(
-            onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const ProfilePage())),
+            onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const ProfilePage(userId: ''))),
             child: CircleAvatar(radius: 18, backgroundImage: NetworkImage(avatar)),
           ),
         );
@@ -52,7 +53,7 @@ Widget _buildDummyPage(BuildContext context, String title) {
         return Padding(
           padding: const EdgeInsets.only(right: 12.0),
           child: GestureDetector(
-            onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const ProfilePage())),
+            onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const ProfilePage(userId: '',))),
             child: CircleAvatar(radius: 18, backgroundColor: color.shade300, child: Text(initials, style: const TextStyle(color: Colors.white))),
           ),
         );
@@ -121,7 +122,7 @@ class HomePage extends StatelessWidget {
             slivers: [
               SliverAppBar(
                 backgroundColor: Colors.transparent,
-                expandedHeight: 260, // increased for avatar + button
+                expandedHeight: 260,
                 pinned: true,
                 flexibleSpace: FlexibleSpaceBar(
                   centerTitle: true,
@@ -144,7 +145,7 @@ class HomePage extends StatelessWidget {
                             ),
                           ),
                           const SizedBox(height: 15),
-                          // 👇 Fetch user data
+                          
                           StreamBuilder<DocumentSnapshot>(
                             stream: FirebaseFirestore.instance
                                 .collection('users')
@@ -195,7 +196,7 @@ class HomePage extends StatelessWidget {
                                       Navigator.push(
                                         context,
                                         MaterialPageRoute(
-                                            builder: (_) => const ProfilePage()),
+                                            builder: (_) => const ProfilePage(userId: '',)),
                                       );
                                     },
                                     child: const Text(
@@ -214,7 +215,7 @@ class HomePage extends StatelessWidget {
                 ),
               ),
 
-              // ✅ Menu grid stays the same
+              
               SliverPadding(
                 padding: const EdgeInsets.all(12),
                 sliver: SliverGrid.count(
@@ -229,7 +230,7 @@ class HomePage extends StatelessWidget {
                         final user = FirebaseAuth.instance.currentUser;
                         if (user != null) {
                           Navigator.push(context,
-                              MaterialPageRoute(builder: (_) => const UserList()));
+                              MaterialPageRoute(builder: (_) => const ChatListPage()));
                         } else {
                           ScaffoldMessenger.of(context).showSnackBar(
                             const SnackBar(content: Text("Please log in first")),
@@ -269,14 +270,14 @@ class HomePage extends StatelessWidget {
                             MaterialPageRoute(builder: (_) => LuInfoPage()));
                       },
                     ),
-                    _buildMenuCard(
-                      title: "Routine",
-                      image: "assets/routine.webp",
-                      onTap: () {
-                        Navigator.push(context,
-                            MaterialPageRoute(builder: (_) => const RoutinePage()));
-                      },
-                    ),
+                    // _buildMenuCard(
+                    //   title: "Routine",
+                    //   image: "assets/routine.webp",
+                    //   onTap: () {
+                    //     Navigator.push(context,
+                    //         MaterialPageRoute(builder: (_) => const RoutinePage()));
+                    //   },
+                    // ),
                     _buildMenuCard(
                       title: "Notice",
                       image: "assets/notice.webp",

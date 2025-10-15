@@ -11,7 +11,6 @@ class UsersAdminPage extends StatefulWidget {
 class _UsersAdminPageState extends State<UsersAdminPage> {
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
 
-  // Function to update user role
   void _updateUserRole(String userId, String newRole) async {
     try {
       await _firestore.collection('users').doc(userId).update({

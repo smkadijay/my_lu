@@ -1,7 +1,6 @@
 import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
-import 'notice_upload_page.dart';
 import 'package:google_fonts/google_fonts.dart';
 
 class NoticeListPage extends StatelessWidget {
@@ -29,30 +28,24 @@ class NoticeListPage extends StatelessWidget {
               color: Colors.white,
             ),
           ),
-          actions: [
-            IconButton(
-              icon: const Icon(Icons.add_circle_outline, color: Colors.white),
-              onPressed: () {
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(builder: (_) => const NoticeUploadPage()),
-                );
-              },
-            ),
-          ],
         ),
         body: StreamBuilder<QuerySnapshot>(
           stream: FirebaseFirestore.instance.collection('notices').snapshots(),
           builder: (context, snapshot) {
             if (!snapshot.hasData) {
-              return const Center(child: CircularProgressIndicator(color: Colors.white));
+              return const Center(
+                child: CircularProgressIndicator(color: Colors.white),
+              );
             }
 
             final notices = snapshot.data!.docs;
 
             if (notices.isEmpty) {
               return const Center(
-                child: Text('No notices yet.', style: TextStyle(color: Colors.white70)),
+                child: Text(
+                  'No notices yet.',
+                  style: TextStyle(color: Colors.white70),
+                ),
               );
             }
 
@@ -72,20 +65,37 @@ class NoticeListPage extends StatelessWidget {
                         decoration: BoxDecoration(
                           color: Colors.white.withOpacity(0.15),
                           borderRadius: BorderRadius.circular(25),
-                          border: Border.all(color: Colors.white.withOpacity(0.3)),
+                          border:
+                              Border.all(color: Colors.white.withOpacity(0.3)),
                         ),
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
+                            // 🔹 Tap korle full image open hobe
                             ClipRRect(
-                              borderRadius: const BorderRadius.vertical(top: Radius.circular(25)),
-                              child: Image.network(
-                                notice['imageUrl'],
-                                height: 200,
-                                width: double.infinity,
-                                fit: BoxFit.cover,
-                                errorBuilder: (context, error, stackTrace) =>
-                                    const Icon(Icons.broken_image, size: 50, color: Colors.white),
+                              borderRadius: const BorderRadius.vertical(
+                                  top: Radius.circular(25)),
+                              child: GestureDetector(
+                                onTap: () {
+                                  Navigator.push(
+                                    context,
+                                    MaterialPageRoute(
+                                      builder: (_) => FullScreenImagePage(
+                                        imageUrl: notice['imageUrl'],
+                                      ),
+                                    ),
+                                  );
+                                },
+                                child: Image.network(
+                                  notice['imageUrl'],
+                                  height: 200,
+                                  width: double.infinity,
+                                  fit: BoxFit.cover,
+                                  errorBuilder:
+                                      (context, error, stackTrace) =>
+                                          const Icon(Icons.broken_image,
+                                              size: 50, color: Colors.white),
+                                ),
                               ),
                             ),
                             Padding(
@@ -121,6 +131,33 @@ class NoticeListPage extends StatelessWidget {
               },
             );
           },
+        ),
+      ),
+    );
+  }
+}
+
+/// 🔹 Full Screen Image Page
+class FullScreenImagePage extends StatelessWidget {
+  final String imageUrl;
+  const FullScreenImagePage({super.key, required this.imageUrl});
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      backgroundColor: Colors.black,
+      appBar: AppBar(
+        backgroundColor: Colors.black,
+        iconTheme: const IconThemeData(color: Colors.white),
+      ),
+      body: Center(
+        child: InteractiveViewer(
+          child: Image.network(
+            imageUrl,
+            fit: BoxFit.contain,
+            errorBuilder: (context, error, stackTrace) =>
+                const Icon(Icons.broken_image, color: Colors.white, size: 80),
+          ),
         ),
       ),
     );
