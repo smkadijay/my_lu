@@ -11,6 +11,8 @@ class CloudinaryService {
 
   CloudinaryService({required this.cloudName, required this.uploadPreset});
 
+  static get instance => null;
+
   Future<String> uploadFile(File file, {required String resourceType}) async {
     // resourceType: 'image' | 'video' | 'auto' (auto handles docs too)
     final uri = Uri.parse('https://api.cloudinary.com/v1_1/$cloudName/$resourceType/upload');

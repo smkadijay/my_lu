@@ -459,10 +459,12 @@ class _ChatInputState extends State<ChatInput> {
                           icon:
                               const Icon(Icons.send, color: Colors.deepPurpleAccent),
                           onPressed: () async {
-                            if (_img != null) await _sendImage();
-                            else if (_file != null) await _sendFile();
+                            if (_img != null) {
+                              await _sendImage();
+                            } else if (_file != null) await _sendFile();
                             else await _sendText();
-                          }),
+                          },
+                      ),
                 ],
               ),
             ),

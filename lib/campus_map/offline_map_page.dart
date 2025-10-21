@@ -15,6 +15,7 @@ class _OfflineMapPageState extends State<OfflineMapPage> {
       'dy': 250.0,
       'icon': Icons.school,
       'color': Colors.green
+      
     },
     {
       'name': 'LU Cafe',

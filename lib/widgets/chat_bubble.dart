@@ -7,7 +7,7 @@ class ChatBubble extends StatelessWidget {
   final Map<String, dynamic> message;
   final bool isMe;
 
-  const ChatBubble({super.key, required this.message, required this.isMe});
+  const ChatBubble({super.key, required this.message, required this.isMe, String? avatarUrl, required String messageType});
 
   bool _isImage(String? url) {
     if (url == null) return false;

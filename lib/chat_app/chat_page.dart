@@ -96,7 +96,7 @@ class ChatPage extends StatelessWidget {
                           } catch (_) {}
                         }
 
-                        return ChatBubble(message: msg, isMe: isMe);
+                        return ChatBubble(message: msg, isMe: isMe, messageType: '',);
                       },
                     );
                   },

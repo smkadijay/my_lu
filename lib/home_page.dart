@@ -13,14 +13,6 @@ import 'package:my_lu/profile_page.dart';
 import 'package:my_lu/chat_app/message_request_page.dart';
 import 'package:my_lu/chat_app/privacy_settings_page.dart';
 
-// class RoutinePage extends StatelessWidget {
-//   const RoutinePage({super.key});
-//   @override
-//   Widget build(BuildContext context) {
-//     return _buildDummyPage(context, "Routine Page");
-//   }
-// }
-
 Widget _buildDummyPage(BuildContext context, String title) {
   return Scaffold(
     appBar: AppBar(
@@ -196,7 +188,7 @@ class HomePage extends StatelessWidget {
                                       Navigator.push(
                                         context,
                                         MaterialPageRoute(
-                                            builder: (_) => const ProfilePage(userId: '',)),
+                                            builder: (_) => ProfilePage(userId: uid)),
                                       );
                                     },
                                     child: const Text(
@@ -270,14 +262,6 @@ class HomePage extends StatelessWidget {
                             MaterialPageRoute(builder: (_) => LuInfoPage()));
                       },
                     ),
-                    // _buildMenuCard(
-                    //   title: "Routine",
-                    //   image: "assets/routine.webp",
-                    //   onTap: () {
-                    //     Navigator.push(context,
-                    //         MaterialPageRoute(builder: (_) => const RoutinePage()));
-                    //   },
-                    // ),
                     _buildMenuCard(
                       title: "Notice",
                       image: "assets/notice.webp",
@@ -311,6 +295,7 @@ class HomePage extends StatelessWidget {
           fit: StackFit.expand,
           children: [
             Image.asset(image, fit: BoxFit.cover),
+            // ignore: deprecated_member_use
             Container(color: Colors.black.withOpacity(0.4)),
             Center(
               child: Text(
@@ -329,10 +314,6 @@ class HomePage extends StatelessWidget {
     );
   }
 }
-
-
-  
-
   Widget _buildMenuCard({
     required String title,
     required String image,

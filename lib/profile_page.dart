@@ -2,7 +2,8 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:firebase_storage/firebase_storage.dart';
+import 'package:http/http.dart' as http;
+import 'dart:convert';
 
 class ProfilePage extends StatefulWidget {
   final String userId;
@@ -14,13 +15,14 @@ class ProfilePage extends StatefulWidget {
 
 class _ProfilePageState extends State<ProfilePage> {
   bool isEditing = false;
+  bool isLoading = false; // spinner control
   File? imageFile;
 
   TextEditingController nameController = TextEditingController();
   TextEditingController departmentController = TextEditingController();
   TextEditingController roleController = TextEditingController();
 
-  String profileImageUrl = "";
+  String avatar = "";
   String name = "";
   String department = "";
   String role = "";
@@ -32,21 +34,25 @@ class _ProfilePageState extends State<ProfilePage> {
   }
 
   Future<void> fetchUserData() async {
-    var doc = await FirebaseFirestore.instance
-        .collection('users')
-        .doc(widget.userId)
-        .get();
+    try {
+      var doc = await FirebaseFirestore.instance
+          .collection('users')
+          .doc(widget.userId)
+          .get();
 
-    if (doc.exists) {
-      setState(() {
-        name = doc['name'];
-        department = doc['department'];
-        role = doc['role'];
-        profileImageUrl = doc['profileImage'] ?? "";
-        nameController.text = name;
-        departmentController.text = department;
-        roleController.text = role;
-      });
+      if (doc.exists) {
+        setState(() {
+          name = doc['name'] ?? '';
+          department = doc['department'] ?? '';
+          role = doc['role'] ?? '';
+          avatar = doc['avatar'] ?? '';
+          nameController.text = name;
+          departmentController.text = department;
+          roleController.text = role;
+        });
+      }
+    } catch (e) {
+      print("Firestore fetch error: $e");
     }
   }
 
@@ -61,34 +67,95 @@ class _ProfilePageState extends State<ProfilePage> {
     }
   }
 
-  Future<void> saveProfile() async {
-    String imageUrl = profileImageUrl;
+  Future<String?> uploadToCloudinary(File image) async {
+    try {
+      String publicId =
+          "chat_files/${widget.userId}_${DateTime.now().millisecondsSinceEpoch}";
 
-    if (imageFile != null) {
-      var storageRef = FirebaseStorage.instance
-          .ref()
-          .child('profile_pictures/${widget.userId}');
-      await storageRef.putFile(imageFile!);
-      imageUrl = await storageRef.getDownloadURL();
+      final request = http.MultipartRequest(
+        'POST',
+        Uri.parse('https://api.cloudinary.com/v1_1/daaz6phgh/image/upload'),
+      );
+      request.fields['upload_preset'] = 'unsigned_upload';
+      request.fields['public_id'] = publicId;
+      request.files.add(await http.MultipartFile.fromPath('file', image.path));
+
+      final response = await request.send();
+      final resStr = await response.stream.bytesToString();
+      final resJson = json.decode(resStr);
+
+      if (response.statusCode == 200 || response.statusCode == 201) {
+        return resJson['secure_url'];
+      } else {
+        print("Cloudinary error: $resStr");
+        return null;
+      }
+    } catch (e) {
+      print("Upload exception: $e");
+      return null;
     }
+  }
 
-    await FirebaseFirestore.instance
-        .collection('users')
-        .doc(widget.userId)
-        .update({
-      'name': nameController.text,
-      'department': departmentController.text,
-      'role': roleController.text,
-      'profileImage': imageUrl,
-    });
+  Future<void> saveProfile() async {
+    if (isLoading) return;
 
     setState(() {
-      name = nameController.text;
-      department = departmentController.text;
-      role = roleController.text;
-      profileImageUrl = imageUrl;
-      isEditing = false;
+      isLoading = true;
     });
+
+    String imageUrl = avatar;
+
+    // Upload new image if selected
+    if (imageFile != null) {
+      String? uploadedUrl = await uploadToCloudinary(imageFile!);
+      if (uploadedUrl != null) {
+        imageUrl = uploadedUrl;
+      } else {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text("Image upload failed!")),
+        );
+        setState(() {
+          isLoading = false;
+        });
+        return;
+      }
+    }
+
+    try {
+      // Update Firestore (merge in case doc doesn't exist)
+      await FirebaseFirestore.instance
+          .collection('users')
+          .doc(widget.userId)
+          .set({
+        'name': nameController.text,
+        'department': departmentController.text,
+        'role': roleController.text,
+        'avatar': imageUrl,
+        'updatedAt': FieldValue.serverTimestamp(),
+      }, SetOptions(merge: true));
+
+      setState(() {
+        name = nameController.text;
+        department = departmentController.text;
+        role = roleController.text;
+        avatar = imageUrl;
+        isEditing = false;
+        isLoading = false;
+        imageFile = null;
+      });
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text("Profile updated successfully!")),
+      );
+    } catch (e) {
+      print("Firestore update error: $e");
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text("Profile update failed!")),
+      );
+      setState(() {
+        isLoading = false;
+      });
+    }
   }
 
   @override
@@ -123,8 +190,8 @@ class _ProfilePageState extends State<ProfilePage> {
                         radius: 70,
                         backgroundImage: imageFile != null
                             ? FileImage(imageFile!)
-                            : (profileImageUrl.isNotEmpty
-                                ? NetworkImage(profileImageUrl)
+                            : (avatar.isNotEmpty
+                                ? NetworkImage(avatar)
                                 : const AssetImage('assets/avatar.png')
                                     as ImageProvider),
                       ),
@@ -167,7 +234,14 @@ class _ProfilePageState extends State<ProfilePage> {
                         });
                       }
                     },
-                    child: Text(isEditing ? "Save" : "Edit Profile"),
+                    child: isLoading
+                        ? const SizedBox(
+                            width: 25,
+                            height: 25,
+                            child: CircularProgressIndicator(
+                                color: Colors.purple, strokeWidth: 2.5),
+                          )
+                        : Text(isEditing ? "Save" : "Edit Profile"),
                   ),
                 ],
               ),
@@ -211,24 +285,23 @@ class _ProfilePageState extends State<ProfilePage> {
         Text(
           name,
           style: const TextStyle(
-              fontSize: 24, fontWeight: FontWeight.bold, color: Colors.white),
+              fontSize: 24, fontWeight: FontWeight.bold, color: Color.fromARGB(255, 2, 2, 2)),
         ),
         const SizedBox(height: 5),
         Text(
           department,
-          style: const TextStyle(fontSize: 18, color: Colors.white70),
+          style: const TextStyle(fontSize: 18, color: Color.fromARGB(179, 3, 3, 3)),
         ),
         const SizedBox(height: 5),
         Text(
           role,
-          style: const TextStyle(fontSize: 18, color: Colors.white70),
+          style: const TextStyle(fontSize: 18, color: Color.fromARGB(179, 2, 2, 2)),
         ),
       ],
     );
   }
 }
 
-// Wavy top shape
 class WaveClipper extends CustomClipper<Path> {
   @override
   Path getClip(Size size) {
@@ -239,10 +312,10 @@ class WaveClipper extends CustomClipper<Path> {
     var secondControlPoint = Offset(3 * size.width / 4, size.height - 150);
     var secondEndPoint = Offset(size.width, size.height - 50);
 
-    path.quadraticBezierTo(
-        firstControlPoint.dx, firstControlPoint.dy, firstEndPoint.dx, firstEndPoint.dy);
-    path.quadraticBezierTo(
-        secondControlPoint.dx, secondControlPoint.dy, secondEndPoint.dx, secondEndPoint.dy);
+    path.quadraticBezierTo(firstControlPoint.dx, firstControlPoint.dy,
+        firstEndPoint.dx, firstEndPoint.dy);
+    path.quadraticBezierTo(secondControlPoint.dx, secondControlPoint.dy,
+        secondEndPoint.dx, secondEndPoint.dy);
     path.lineTo(size.width, 0);
     path.close();
     return path;
